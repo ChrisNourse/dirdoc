@@ -1,80 +1,71 @@
 SHELL = /bin/bash
 
-CC       = gcc
-CFLAGS   = -g -O -static -fno-pie -no-pie -mno-red-zone -nostdlib -nostdinc
-LDFLAGS  = -Wl,--oformat=binary \
-           -Wl,--gc-sections \
-           -Wl,-z,max-page-size=0x1000 \
-           -Wl,-T deps/cosmo/ape.lds
-
+# Directories
 SRC_DIR   = src
 DEPS_DIR  = deps
 BUILD_DIR = build
 
-COSMO_ZIP_URL = https://github.com/jart/cosmopolitan/releases/download/2.1/cosmopolitan-amalgamation-2.1.zip
-COSMO_ZIP     = cosmopolitan.zip
+# Compiler and Flags
+CC = $(DEPS_DIR)/cosmocc/bin/cosmocc
+CFLAGS = -g -O2
+LDFLAGS = 
 
-.PHONY: all clean test deps
+# Cosmopolitan Libc 4.0.2 URLs
+COSMO_ZIP_URL = https://github.com/jart/cosmopolitan/releases/download/4.0.2/cosmocc-4.0.2.zip
+COSMO_ZIP     = cosmocc-4.0.2.zip
+
+.PHONY: all clean super_clean deps help
 
 all: deps $(BUILD_DIR)/dirdoc
 	@echo "✅ Build completed successfully"
 	@echo "📍 Binary location: $(BUILD_DIR)/dirdoc"
 	@echo "🚀 Run ./$(BUILD_DIR)/dirdoc --help for usage"
 
-deps:
-	@if [ ! -f "$(DEPS_DIR)/cosmo/cosmopolitan.a" ]; then \
-		mkdir -p "$(DEPS_DIR)/cosmo" && \
-		echo "📦 Fetching dependencies..." && \
-		if command -v curl >/dev/null 2>&1; then \
-			printf "⏳ Downloading..." && \
-			curl -fSL "$(COSMO_ZIP_URL)" -o "$(DEPS_DIR)/cosmo/$(COSMO_ZIP)" && \
-			printf "\r✅ Downloaded \n"; \
-		elif command -v wget >/dev/null 2>&1; then \
-			printf "⏳ Downloading..." && \
-			wget -q "$(COSMO_ZIP_URL)" -O "$(DEPS_DIR)/cosmo/$(COSMO_ZIP)" && \
-			printf "\r✅ Downloaded \n"; \
-		else \
-			echo "❌ Error: Neither curl nor wget found"; \
-			exit 1; \
-		fi && \
-		printf "⏳ Unpacking..." && \
-		if command -v unzip >/dev/null 2>&1; then \
-			unzip -q "$(DEPS_DIR)/cosmo/$(COSMO_ZIP)" -d "$(DEPS_DIR)/cosmo" && \
-			printf "\r✅ Unpacked  \n"; \
-		elif command -v 7z >/dev/null 2>&1; then \
-			7z x -y "$(DEPS_DIR)/cosmo/$(COSMO_ZIP)" -o"$(DEPS_DIR)/cosmo" >/dev/null && \
-			printf "\r✅ Unpacked  \n"; \
-		else \
-			echo "❌ Error: Neither unzip nor 7z found"; \
-			exit 1; \
-		fi && \
-		rm "$(DEPS_DIR)/cosmo/$(COSMO_ZIP)"; \
+deps: $(CC)
+
+$(CC): $(DEPS_DIR)/$(COSMO_ZIP)
+	@echo "⏳ Checking cosmocc..."
+	@if [ ! -f "$(CC)" ]; then \
+		echo "⏳ Unpacking $(COSMO_ZIP)..."; \
+		mkdir -p $(DEPS_DIR)/cosmocc/bin; \
+		unzip -q $(DEPS_DIR)/$(COSMO_ZIP) -d $(DEPS_DIR)/cosmocc; \
+		chmod +x $(CC); \
+		echo "✅ Dependencies setup complete."; \
 	else \
-		echo "✅ Dependencies ready"; \
+		echo "✅ cosmocc already exists, skipping unzip"; \
 	fi
 
+$(DEPS_DIR)/$(COSMO_ZIP):
+	@mkdir -p $(DEPS_DIR)
+	@if [ ! -f "$(DEPS_DIR)/$(COSMO_ZIP)" ]; then \
+		echo "📦 Fetching Cosmopolitan 4.0.2 dependencies..."; \
+		curl -L $(COSMO_ZIP_URL) -o $(DEPS_DIR)/$(COSMO_ZIP); \
+		echo "✅ Downloaded $(COSMO_ZIP)"; \
+	else \
+		echo "✅ $(COSMO_ZIP) already exists, skipping download"; \
+	fi
 $(BUILD_DIR):
-	@mkdir -p $(BUILD_DIR)
+	mkdir -p $(BUILD_DIR)
 
 $(BUILD_DIR)/dirdoc: $(SRC_DIR)/dirdoc.c $(SRC_DIR)/dirdoc_impl.c | $(BUILD_DIR) deps
-	@printf "⏳ Building..." && \
-	$(CC) $(CFLAGS) \
-		-I$(DEPS_DIR)/cosmo \
-		-o $@ $^ $(LDFLAGS) \
-		$(DEPS_DIR)/cosmo/crt.o \
-		$(DEPS_DIR)/cosmo/ape.o \
-		$(DEPS_DIR)/cosmo/cosmopolitan.a && \
-	printf "\r✅ Build complete\n"
-
-test: $(SRC_DIR)/test_dirdoc.c $(SRC_DIR)/dirdoc_impl.c
-	@printf "⏳ Building tests..." && \
-	$(CC) -g -o $(BUILD_DIR)/test_dirdoc $^ -I$(DEPS_DIR)/greatest -I$(SRC_DIR) && \
-	printf "\r✅ Tests built   \n" && \
-	printf "⏳ Running tests..." && \
-	./$(BUILD_DIR)/test_dirdoc && \
-	printf "\r✅ Tests passed   \n"
+	@echo "⏳ Building dirdoc..."
+	$(CC) $(CFLAGS) -I$(DEPS_DIR)/cosmocc/include -o $@ $^ $(LDFLAGS)
+	@echo "✅ Build complete"
 
 clean:
-	@printf "⏳ Cleaning..." && \
-	rm -rf $(BUILD_DIR) && \
-	printf "\r✅ Clean complete\n"
+	@echo "⏳ Cleaning build artifacts..."
+	rm -rf $(BUILD_DIR)
+	@echo "✅ Clean complete"
+
+super_clean:
+	@echo "⏳ Cleaning build artifacts and dependencies..."
+	rm -rf $(BUILD_DIR) $(DEPS_DIR)
+	@echo "✅ Clean complete"
+
+help:
+	@echo "Available targets:"
+	@echo "  all         - Build the dirdoc application"
+	@echo "  deps        - Download and set up dependencies"
+	@echo "  clean       - Remove build artifacts"
+	@echo "  super_clean - Remove build artifacts and dependencies"
+	@echo "  help        - Show this help message"

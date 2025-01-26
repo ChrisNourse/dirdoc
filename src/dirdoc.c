@@ -1,4 +1,14 @@
-#include "cosmopolitan.h"
+#include <cosmo.h>    // Cosmopolitan environment
+#include <ctype.h>    // isspace(), etc.
+#include <dirent.h>   // DIR, opendir(), readdir(), closedir()
+#include <errno.h>
+#include <stdbool.h>
+#include <stdio.h>    // printf(), fprintf(), fopen(), fclose(), etc.
+#include <stdlib.h>   // malloc(), free(), realloc(), system(), mkdtemp(), etc.
+#include <string.h>   // strcmp(), strrchr(), strlen(), etc.
+#include <sys/stat.h> // struct stat, stat(), S_ISDIR
+#include <unistd.h>   // for close() or access(), etc.
+
 #include "dirdoc.h"
 
 void print_help() {

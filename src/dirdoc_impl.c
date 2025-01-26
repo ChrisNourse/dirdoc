@@ -1,5 +1,15 @@
+#include <cosmo.h>
+#include <ctype.h>
+#include <dirent.h>      // <-- Needed for DIR, opendir(), readdir(), closedir()
+#include <errno.h>
+#include <stdbool.h>
+#include <stdio.h>       // <-- Needed for printf(), FILE, fprintf(), etc.
+#include <stdlib.h>      // <-- Needed for malloc(), free(), realloc(), etc.
+#include <string.h>      // <-- Needed for strcmp(), strrchr(), strlen(), etc.
+#include <sys/stat.h>    // <-- Needed for struct stat, stat(), S_ISDIR
+#include <unistd.h>      // <-- Often needed for close(), etc. if used
+
 #include "dirdoc.h"
-#include "cosmopolitan.h"
 
 typedef struct {
     char **patterns;

@@ -1,7 +1,8 @@
 #ifndef DIRDOC_H
 #define DIRDOC_H
 
-#include "cosmopolitan.h"
+#include <cosmo.h>
+#include <stdio.h>
 
 #define MAX_PATH_LEN 4096
 #define BUFFER_SIZE 4096
