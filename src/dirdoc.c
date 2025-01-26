@@ -14,9 +14,9 @@
 static void print_help() {
     printf("Usage: dirdoc [options] <directory>\n\n"
            "Options:\n"
-           "  -h, --help          Show this help message\n"
-           "  -o, --output        Specify output file (default: directory_documentation.md)\n"
-           "  --no-gitignore   Ignore .gitignore file\n"
+           "  -h,   --help          Show this help message\n"
+           "  -o,   --output        Specify output file (default: directory_documentation.md)\n"
+           "  -ngi, --no-gitignore  Ignore .gitignore file\n"
            "\nExamples:\n"
            "  dirdoc /path/to/dir\n"
            "  dirdoc -o custom.md /path/to/dir\n"
