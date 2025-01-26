@@ -170,6 +170,10 @@ char *get_file_size(const char *path) {
     return size;
 }
 
+static inline int max(int a, int b) {
+    return a > b ? a : b;
+}
+
 int count_max_backticks(const char *content) {
     int max_count = 0;
     int current_count = 0;
@@ -261,9 +265,10 @@ void write_file_content(FILE *out, const char *path, DocumentInfo *info) {
     }
     fclose(f);
     
-    int max_backticks = count_max_backticks(content) + 1;
+    int max_backticks = count_max_backticks(content);
+    int fence_count = max(3, max_backticks + 1);
     
-    for (int i = 0; i < max_backticks; i++) {
+    for (int i = 0; i < fence_count; i++) {
         fputc('`', out);
     }
     fprintf(out, "\n");
@@ -274,7 +279,7 @@ void write_file_content(FILE *out, const char *path, DocumentInfo *info) {
     if (content[content_size-1] != '\n') {
         fprintf(out, "\n");
     }
-    for (int i = 0; i < max_backticks; i++) {
+    for (int i = 0; i < fence_count; i++) {
         fputc('`', out);
     }
     fprintf(out, "\n");
