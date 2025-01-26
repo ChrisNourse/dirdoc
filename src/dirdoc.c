@@ -14,13 +14,15 @@
 static void print_help() {
     printf("Usage: dirdoc [options] <directory>\n\n"
            "Options:\n"
-           "  -h,   --help          Show this help message\n"
-           "  -o,   --output        Specify output file (default: directory_documentation.md)\n"
-           "  -ngi, --no-gitignore  Ignore .gitignore file\n"
+           "  -h,   --help            Show this help message\n"
+           "  -o,   --output          Specify output file (default: directory_documentation.md)\n"
+           "  -ngi, --no-gitignore    Ignore .gitignore file\n"
+           "  -s,   --structure-only  Generate structure only, no file content\n"
            "\nExamples:\n"
            "  dirdoc /path/to/dir\n"
            "  dirdoc -o custom.md /path/to/dir\n"
            "  dirdoc --no-gitignore /path/to/dir\n"
+           "  dirdoc --structure-only /path/to/dir\n"
            "  dirdoc --ng /path/to/dir\n");
 }
 
@@ -50,6 +52,9 @@ int main(int argc, char *argv[]) {
         }
         else if (strcmp(argv[i], "--no-gitignore") == 0 || strcmp(argv[i], "--ng") == 0) {
             flags |= IGNORE_GITIGNORE;
+        }
+        else if (strcmp(argv[i], "-s") == 0 || strcmp(argv[i], "--structure-only") == 0) {
+            flags |= STRUCTURE_ONLY;
         }
         else if (argv[i][0] == '-') {
             fprintf(stderr, "Unknown option: %s\n", argv[i]);

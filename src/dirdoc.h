@@ -7,7 +7,10 @@
 
 #define MAX_PATH_LEN 4096
 #define BUFFER_SIZE 4096
+
+// Flag bits
 #define IGNORE_GITIGNORE 0x01
+#define STRUCTURE_ONLY   0x02
 
 typedef struct {
     char *path;

@@ -356,23 +356,26 @@ int document_directory(const char *input_dir, const char *output_file, int flags
     qsort(files.entries, files.count, sizeof(FileEntry), compare_entries);
     write_tree_structure(out, &files, &info);
 
-    const char *contents_header = "\n## Contents\n\n";
-    fprintf(out, "%s", contents_header);
-    calculate_token_stats(contents_header, &info);
+    // Skip writing file contents if STRUCTURE_ONLY flag is set
+    if (!(flags & STRUCTURE_ONLY)) {
+        const char *contents_header = "\n## Contents\n\n";
+        fprintf(out, "%s", contents_header);
+        calculate_token_stats(contents_header, &info);
 
-    for (size_t i = 0; i < files.count; i++) {
-        FileEntry *entry = &files.entries[i];
-        if (!entry->is_dir) {
-            char full_path[MAX_PATH_LEN];
-            snprintf(full_path, sizeof(full_path), "%s/%s", input_dir, entry->path);
+        for (size_t i = 0; i < files.count; i++) {
+            FileEntry *entry = &files.entries[i];
+            if (!entry->is_dir) {
+                char full_path[MAX_PATH_LEN];
+                snprintf(full_path, sizeof(full_path), "%s/%s", input_dir, entry->path);
 
-            char heading[MAX_PATH_LEN + 16];
-            snprintf(heading, sizeof(heading), "### 📄 %s\n\n", entry->path);
-            fprintf(out, "%s", heading);
-            calculate_token_stats(heading, &info);
+                char heading[MAX_PATH_LEN + 16];
+                snprintf(heading, sizeof(heading), "### 📄 %s\n\n", entry->path);
+                fprintf(out, "%s", heading);
+                calculate_token_stats(heading, &info);
 
-            write_file_content(out, full_path, &info);
-            fprintf(out, "\n");
+                write_file_content(out, full_path, &info);
+                fprintf(out, "\n");
+            }
         }
     }
 
