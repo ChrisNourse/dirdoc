@@ -81,7 +81,7 @@ char *get_default_output(const char *input_dir) {
     const char *base = strrchr(input_dir, '/');
     if (!base) base = input_dir;
     else base++;
-    snprintf(buffer, sizeof(buffer), "%s_documentation.md", base);
+    snprintf(buffer, sizeof(buffer), "directory_documentation.md");
     return buffer;
 }
 
