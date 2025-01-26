@@ -1,4 +1,3 @@
-// dirdoc_impl.c
 #include "dirdoc.h"
 #include "cosmopolitan.h"
 
@@ -39,10 +38,33 @@ static void free_file_list(FileList *list) {
 }
 
 static bool match_gitignore(const char *path, GitignoreList *gitignore) {
+    if (!gitignore || !gitignore->patterns) return false;
+    
     for (size_t i = 0; i < gitignore->count; i++) {
-        if (strstr(path, gitignore->patterns[i]) != NULL) {
-            return true;
+        const char *pattern = gitignore->patterns[i];
+        
+        // Handle wildcards (e.g., deps/*)
+        if (strchr(pattern, '*')) {
+            char *prefix = strdup(pattern);
+            char *star = strchr(prefix, '*');
+            *star = '\0';
+            
+            bool matches = strncmp(path, prefix, strlen(prefix)) == 0;
+            free(prefix);
+            if (matches) return true;
+            continue;
         }
+        
+        // Handle exact directory matches
+        char *path_norm = strdup(path);
+        if (path_norm[strlen(path_norm)-1] == '/') {
+            path_norm[strlen(path_norm)-1] = '\0';
+        }
+        
+        bool matches = strcmp(path_norm, pattern) == 0 ||
+                      strncmp(path_norm, pattern, strlen(pattern)) == 0;
+        free(path_norm);
+        if (matches) return true;
     }
     return false;
 }
@@ -60,7 +82,16 @@ static void load_gitignore(const char *dir_path, GitignoreList *gitignore) {
     char line[1024];
     while (fgets(line, sizeof(line), f)) {
         if (line[0] == '#' || line[0] == '\n') continue;
-        line[strcspn(line, "\n")] = 0;
+        
+        // Remove trailing newline and whitespace
+        size_t len = strlen(line);
+        while (len > 0 && (line[len-1] == '\n' || isspace(line[len-1]))) {
+            line[--len] = '\0';
+        }
+        
+        // Skip empty lines
+        if (len == 0) continue;
+        
         gitignore->patterns[gitignore->count++] = strdup(line);
     }
     
@@ -68,27 +99,48 @@ static void load_gitignore(const char *dir_path, GitignoreList *gitignore) {
 }
 
 static void free_gitignore(GitignoreList *gitignore) {
+    if (!gitignore || !gitignore->patterns) return;
     for (size_t i = 0; i < gitignore->count; i++) {
         free(gitignore->patterns[i]);
     }
     free(gitignore->patterns);
+    gitignore->patterns = NULL;
+    gitignore->count = 0;
 }
 
 static int compare_entries(const void *a, const void *b) {
     const FileEntry *fa = a;
     const FileEntry *fb = b;
     
-    if (fa->depth != fb->depth)
-        return fa->depth - fb->depth;
-        
-    if (fa->is_dir != fb->is_dir)
-        return fb->is_dir - fa->is_dir;
-        
+    // Get parent directories
+    char *parent_a = strdup(fa->path);
+    char *parent_b = strdup(fb->path);
+    char *last_slash_a = strrchr(parent_a, '/');
+    char *last_slash_b = strrchr(parent_b, '/');
+    
+    if (last_slash_a) *last_slash_a = '\0';
+    if (last_slash_b) *last_slash_b = '\0';
+    
+    // Compare parent directories first
+    int parent_cmp = strcmp(parent_a ?: "", parent_b ?: "");
+    free(parent_a);
+    free(parent_b);
+    
+    if (parent_cmp != 0) return parent_cmp;
+    
+    // Files in same directory - directories first
+    if (fa->is_dir != fb->is_dir) return fb->is_dir - fa->is_dir;
+    
+    // Both files or both directories - sort by name
     return strcmp(fa->path, fb->path);
 }
 
 static bool scan_directory(const char *dir_path, const char *rel_path, 
                          FileList *list, int depth, GitignoreList *gitignore) {
+    // Check if the directory itself is ignored
+    if (gitignore && rel_path && match_gitignore(rel_path, gitignore)) {
+        return false;
+    }
     DIR *dir = opendir(dir_path);
     if (!dir) {
         fprintf(stderr, "Error: Directory '%s' does not exist\n", dir_path);
@@ -98,7 +150,7 @@ static bool scan_directory(const char *dir_path, const char *rel_path,
     bool has_entries = false;
     struct dirent *entry;
     while ((entry = readdir(dir))) {
-        if (strcmp(entry->d_name, ".gitignore") != 0 && entry->d_name[0] == '.') continue;
+        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) continue;
         
         char full_path[MAX_PATH_LEN];
         char rel_entry_path[MAX_PATH_LEN];
@@ -107,7 +159,7 @@ static bool scan_directory(const char *dir_path, const char *rel_path,
         snprintf(rel_entry_path, sizeof(rel_entry_path), "%s%s%s", 
                 rel_path ? rel_path : "", rel_path ? "/" : "", entry->d_name);
                 
-        if (strcmp(entry->d_name, ".gitignore") != 0 && match_gitignore(rel_entry_path, gitignore)) {
+        if (gitignore && match_gitignore(rel_entry_path, gitignore)) {
             continue;
         }
         
@@ -125,6 +177,42 @@ static bool scan_directory(const char *dir_path, const char *rel_path,
     closedir(dir);
     return has_entries || list->count > 0;
 }
+
+static void write_tree_structure(FILE *out, FileList *list, DocumentInfo *info) {
+    size_t current_depth = 0;
+    bool *has_sibling = calloc(MAX_PATH_LEN, sizeof(bool));
+    
+    for (size_t i = 0; i < list->count; i++) {
+        FileEntry *entry = &list->entries[i];
+        size_t next_depth = (i + 1 < list->count) ? list->entries[i + 1].depth : 0;
+        
+        // Print tree connectors
+        for (size_t d = 0; d < entry->depth; d++) {
+            if (d == entry->depth - 1) {
+                fprintf(out, "├── ");
+            } else if (has_sibling[d]) {
+                fprintf(out, "│   ");
+            } else {
+                fprintf(out, "    ");
+            }
+        }
+        
+        // Print entry
+        char line[MAX_PATH_LEN + 10];
+        snprintf(line, sizeof(line), "%s %s%s\n", 
+                entry->is_dir ? "📁" : "📄",
+                strrchr(entry->path, '/') ? strrchr(entry->path, '/') + 1 : entry->path,
+                entry->is_dir ? "/" : "");
+        fprintf(out, "%s", line);
+        calculate_token_stats(line, info);
+        
+        // Update sibling tracking
+        has_sibling[entry->depth] = (next_depth >= entry->depth);
+    }
+    
+    free(has_sibling);
+}
+
 
 char *get_default_output(const char *input_dir) {
     static char buffer[MAX_PATH_LEN];
@@ -295,9 +383,11 @@ void print_terminal_stats(const char *output_path, const DocumentInfo *info) {
     printf("   - Total Size: %.2f MB\n", (double)info->total_size / (1024 * 1024));
 }
 
-int document_directory(const char *input_dir, const char *output_file) {
+int document_directory(const char *input_dir, const char *output_file, int flags) {
     GitignoreList gitignore = {0};
-    load_gitignore(input_dir, &gitignore);
+    if (!(flags & IGNORE_GITIGNORE)) {
+        load_gitignore(input_dir, &gitignore);
+    }
     
     char *out_path = output_file ? (char *)output_file : get_default_output(input_dir);
     FILE *out = fopen(out_path, "w");
@@ -309,7 +399,7 @@ int document_directory(const char *input_dir, const char *output_file) {
     DocumentInfo info = {0};
     
     const char *header = "# Directory Documentation: ";
-    fprintf(out, "%s%s\n\n", header, strrchr(input_dir, '/') + 1);
+    fprintf(out, "%s%s\n\n", header, strrchr(input_dir, '/') ? strrchr(input_dir, '/') + 1 : input_dir);
     calculate_token_stats(header, &info);
     
     const char *structure_header = "## Structure\n\n";
@@ -319,27 +409,14 @@ int document_directory(const char *input_dir, const char *output_file) {
     FileList files = {0};
     init_file_list(&files);
     
-    if (!scan_directory(input_dir, NULL, &files, 0, &gitignore)) {
+    if (!scan_directory(input_dir, NULL, &files, 0, !(flags & IGNORE_GITIGNORE) ? &gitignore : NULL)) {
         fprintf(stderr, "Error: No files or folders found in directory '%s'\n", input_dir);
         free_gitignore(&gitignore);
         return 1;
     }
     
     qsort(files.entries, files.count, sizeof(FileEntry), compare_entries);
-    
-    for (size_t i = 0; i < files.count; i++) {
-        FileEntry *entry = &files.entries[i];
-        char line[MAX_PATH_LEN + 10];
-        for (int j = 0; j < entry->depth; j++) {
-            fprintf(out, "  ");
-        }
-        snprintf(line, sizeof(line), "- %s %s%s\n", 
-                entry->is_dir ? "📁" : "📄",
-                entry->path,
-                entry->is_dir ? "/" : "");
-        fprintf(out, "%s", line);
-        calculate_token_stats(line, &info);
-    }
+    write_tree_structure(out, &files, &info);
     
     const char *contents_header = "\n## Contents\n\n";
     fprintf(out, "%s", contents_header);

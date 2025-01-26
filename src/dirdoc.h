@@ -1,4 +1,3 @@
-// dirdoc.h
 #ifndef DIRDOC_H
 #define DIRDOC_H
 
@@ -6,6 +5,7 @@
 
 #define MAX_PATH_LEN 4096
 #define BUFFER_SIZE 4096
+#define IGNORE_GITIGNORE 0x01
 
 typedef struct {
     char *path;
@@ -18,7 +18,7 @@ typedef struct {
     size_t total_tokens;
 } DocumentInfo;
 
-int document_directory(const char *input_dir, const char *output_file);
+int document_directory(const char *input_dir, const char *output_file, int flags);
 bool is_binary_file(const char *path);
 char *get_file_hash(const char *path);
 char *get_file_size(const char *path);
