@@ -44,10 +44,15 @@ $(DEPS_DIR)/$(COSMO_ZIP):
 	else \
 		echo "✅ $(COSMO_ZIP) already exists, skipping download"; \
 	fi
+
 $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
 
-$(BUILD_DIR)/dirdoc: $(SRC_DIR)/dirdoc.c $(SRC_DIR)/dirdoc_impl.c | $(BUILD_DIR) deps
+$(BUILD_DIR)/dirdoc: \
+	$(SRC_DIR)/dirdoc.c \
+	$(SRC_DIR)/dirdoc_impl.c \
+	$(SRC_DIR)/gitignore.c \
+	| $(BUILD_DIR) deps
 	@echo "⏳ Building dirdoc..."
 	$(CC) $(CFLAGS) -I$(DEPS_DIR)/cosmocc/include -o $@ $^ $(LDFLAGS)
 	@echo "✅ Build complete"

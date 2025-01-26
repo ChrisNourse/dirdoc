@@ -3,6 +3,7 @@
 
 #include <cosmo.h>
 #include <stdio.h>
+#include <stdbool.h>
 
 #define MAX_PATH_LEN 4096
 #define BUFFER_SIZE 4096
@@ -20,6 +21,8 @@ typedef struct {
 } DocumentInfo;
 
 int document_directory(const char *input_dir, const char *output_file, int flags);
+
+char *get_default_output(const char *input_dir);
 bool is_binary_file(const char *path);
 char *get_file_hash(const char *path);
 char *get_file_size(const char *path);
