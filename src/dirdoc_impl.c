@@ -211,8 +211,8 @@ static void write_tree_structure(FILE *out, FileList *list, DocumentInfo *info) 
     }
     
     free(has_sibling);
+    fprintf(out, "```\n");
 }
-
 
 char *get_default_output(const char *input_dir) {
     static char buffer[MAX_PATH_LEN];
@@ -405,6 +405,7 @@ int document_directory(const char *input_dir, const char *output_file, int flags
     const char *structure_header = "## Structure\n\n";
     fprintf(out, "%s", structure_header);
     calculate_token_stats(structure_header, &info);
+    fprintf(out, "```\n");
     
     FileList files = {0};
     init_file_list(&files);
