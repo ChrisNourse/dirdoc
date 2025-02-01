@@ -142,9 +142,20 @@ int finalize_output(const char *out_path, DocumentInfo *info) {
     file_content[fsize] = '\0';
     fclose(in);
     
-    // Prepend token size header to the content
-    char header[256];
-    snprintf(header, sizeof(header), "Token Size: %zu\n\n", info->total_tokens);
+    // Prepend documentation summary header to the content
+    char header[1024];
+    if (split_enabled) {
+        snprintf(header, sizeof(header),
+            "# Documentation Summary\n\n"
+            "The output is a Markdown document summarizing a directory’s structure and file contents. It begins with token and size statistics, followed by a hierarchical view of the directory layout. For each file (unless omitted in structure-only mode), its contents are included in fenced code blocks with optional language annotations and metadata like file size, forming a complete, self-contained reference.\n\n"
+            "Note: This document has been split into multiple parts due to size limitations.\n\n"
+            "Token Size: %zu\n\n", info->total_tokens);
+    } else {
+        snprintf(header, sizeof(header),
+            "# Documentation Summary\n\n"
+            "The output is a Markdown document summarizing a directory’s structure and file contents. It begins with token and size statistics, followed by a hierarchical view of the directory layout. For each file (unless omitted in structure-only mode), its contents are included in fenced code blocks with optional language annotations and metadata like file size, forming a complete, self-contained reference.\n\n"
+            "Token Size: %zu\n\n", info->total_tokens);
+    }
     
     size_t header_len = strlen(header);
     size_t new_size = header_len + strlen(file_content) + 1;
