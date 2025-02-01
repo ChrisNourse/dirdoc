@@ -12,6 +12,15 @@
 #include "gitignore.h"
 #include "dirdoc.h"
 
+// Static variables for split output options
+static int split_enabled = 0;
+static size_t split_limit_bytes = 18 * 1024 * 1024; // default 18 MB
+
+void set_split_options(int enabled, double limit_mb) {
+    split_enabled = enabled;
+    split_limit_bytes = (size_t)(limit_mb * 1024 * 1024);
+}
+
 static void print_terminal_stats(const char *output_path, const DocumentInfo *info) {
     printf("\n✨ Directory documentation complete!\n");
     printf("📝 Output: %s\n", output_path);
@@ -133,16 +142,71 @@ int finalize_output(const char *out_path, DocumentInfo *info) {
     file_content[fsize] = '\0';
     fclose(in);
     
+    // Prepend token size header to the content
+    char header[256];
+    snprintf(header, sizeof(header), "Token Size: %zu\n\n", info->total_tokens);
+    
+    // Create the final content with header
+    size_t header_len = strlen(header);
+    size_t new_size = header_len + strlen(file_content) + 1;
+    char *new_content = malloc(new_size);
+    strcpy(new_content, header);
+    strcat(new_content, file_content);
+    free(file_content);
+    
+    // Write back to the original output file (temporary)
     FILE *out_final = fopen(out_path, "w");
     if (!out_final) {
         fprintf(stderr, "Error: Cannot reopen output file '%s' for writing\n", out_path);
-        free(file_content);
+        free(new_content);
         return 1;
     }
-    fprintf(out_final, "Token Size: %zu\n\n", info->total_tokens);
-    fputs(file_content, out_final);
+    fputs(new_content, out_final);
     fclose(out_final);
-    free(file_content);
+
+    // If split is not enabled, we're done.
+    if (!split_enabled) {
+        free(new_content);
+        return 0;
+    }
+    
+    // If split is enabled, split new_content into multiple files based on split_limit_bytes.
+    size_t total_size = strlen(new_content);
+    size_t part_count = total_size / split_limit_bytes;
+    if (total_size % split_limit_bytes != 0) {
+        part_count++;
+    }
+    
+    for (size_t i = 0; i < part_count; i++) {
+        // Create new file name: original name with _part<number> suffix before extension (if any)
+        char part_filename[MAX_PATH_LEN];
+        char *dot = strrchr((char *)out_path, '.');
+        if (dot) {
+            size_t basename_len = dot - out_path;
+            snprintf(part_filename, sizeof(part_filename), "%.*s_part%zu%s", (int)basename_len, out_path, i+1, dot);
+        } else {
+            snprintf(part_filename, sizeof(part_filename), "%s_part%zu", out_path, i+1);
+        }
+        
+        FILE *part_file = fopen(part_filename, "w");
+        if (!part_file) {
+            fprintf(stderr, "Error: Cannot create split output file '%s'\n", part_filename);
+            free(new_content);
+            return 1;
+        }
+        
+        size_t offset = i * split_limit_bytes;
+        size_t bytes_to_write = split_limit_bytes;
+        if (offset + bytes_to_write > total_size) {
+            bytes_to_write = total_size - offset;
+        }
+        fwrite(new_content + offset, 1, bytes_to_write, part_file);
+        fclose(part_file);
+    }
+    
+    // Optionally, remove the original unsplit output file.
+    remove(out_path);
+    free(new_content);
     return 0;
 }
 

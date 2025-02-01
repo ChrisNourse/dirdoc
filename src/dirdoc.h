@@ -14,6 +14,7 @@ extern "C" {
 // Flag bits
 #define IGNORE_GITIGNORE 0x01
 #define STRUCTURE_ONLY   0x02
+#define SPLIT_OUTPUT     0x04  // New flag: split output into multiple files
 
 typedef struct {
     char *path;
