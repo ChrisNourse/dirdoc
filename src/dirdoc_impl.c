@@ -174,8 +174,8 @@ char *get_file_size(const char *path) {
     struct stat st;
     if (stat(path, &st) != 0) {
         return "unknown";
-    }
     
+    }
     double size_bytes = st.st_size;
     const char *units[] = {"B", "KB", "MB", "GB", "TB"};
     int unit = 0;
@@ -240,6 +240,39 @@ void calculate_token_stats(const char *str, DocumentInfo *info) {
     }
 }
 
+static const char* get_language_from_extension(const char *filename) {
+    const char *base = strrchr(filename, '/');
+    base = base ? base + 1 : filename;
+    
+    // Check for common makefile names (case-insensitive)
+    if (strcasecmp(base, "Makefile") == 0 || 
+        strcasecmp(base, "GNUmakefile") == 0)
+    {
+        return "make";
+    }
+
+    // Find the last dot in the base filename
+    const char *dot = strrchr(base, '.');
+    if (!dot || dot == base) return "";
+    dot++; // Move past the dot
+
+    // Compare the extension (case-insensitive) to known types
+    if (strcasecmp(dot, "c") == 0) return "c";
+    if (strcasecmp(dot, "h") == 0) return "c";
+    if (strcasecmp(dot, "cpp") == 0) return "cpp";
+    if (strcasecmp(dot, "cc") == 0) return "cpp";
+    if (strcasecmp(dot, "hpp") == 0) return "cpp";
+    if (strcasecmp(dot, "md") == 0) return "markdown";
+    if (strcasecmp(dot, "sql") == 0) return "sql";
+    if (strcasecmp(dot, "sh") == 0) return "bash";
+    if (strcasecmp(dot, "py") == 0) return "python";
+    if (strcasecmp(dot, "js") == 0) return "javascript";
+    if (strcasecmp(dot, "json") == 0) return "json";
+    if (strcasecmp(dot, "html") == 0) return "html";
+
+    return "";
+}
+
 void write_file_content(FILE *out, const char *path, DocumentInfo *info) {
     if (is_binary_file(path)) {
         const char *binary_text = "*Binary file*\n";
@@ -284,11 +317,16 @@ void write_file_content(FILE *out, const char *path, DocumentInfo *info) {
     
     int max_ticks = count_max_backticks(content);
     int fence_count = (max_ticks < 3) ? 3 : (max_ticks + 1);
+    const char *lang = get_language_from_extension(path);
     
     for (int i = 0; i < fence_count; i++) {
         fputc('`', out);
     }
-    fprintf(out, "\n");
+    if (strlen(lang) > 0) {
+        fputc(' ', out);
+        fprintf(out, "%s", lang);
+    }
+    fputc('\n', out);
     
     fprintf(out, "%s", content);
     calculate_token_stats(content, info);
