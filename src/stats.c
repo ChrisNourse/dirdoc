@@ -108,16 +108,57 @@ char *get_file_size(const char *path) {
     return size;
 }
 
+/* 
+ * Improved binary file detection:
+ * Reads up to 1024 bytes and calculates the ratio of printable characters.
+ * Allowed printable characters are: tab (9), line feed (10), carriage return (13),
+ * and characters in the range 32 to 126 inclusive.
+ * If the ratio of printable characters is below 85%, the file is considered binary.
+ */
 bool is_binary_file(const char *path) {
-    FILE *f = fopen(path, "r");
+    FILE *f = fopen(path, "rb");
     if (!f) return true;
     
     unsigned char buf[1024];
     size_t len = fread(buf, 1, sizeof(buf), f);
     fclose(f);
     
+    if (len == 0) return false; // Empty file considered text
+    
+    size_t printable = 0;
     for (size_t i = 0; i < len; i++) {
-        if (buf[i] == 0) return true;
+        unsigned char c = buf[i];
+        if (c == 9 || c == 10 || c == 13 || (c >= 32 && c <= 126)) {
+            printable++;
+        }
+    }
+    double ratio = (double)printable / len;
+    if (ratio < 0.85) {
+        return true;
     }
     return false;
+}
+
+/*
+ * Determines whether a file should be treated as a text file based on its extension.
+ * Returns false for common binary file extensions.
+ */
+bool is_text_file_by_extension(const char *filename) {
+    const char *dot = strrchr(filename, '.');
+    if (!dot || dot == filename) return true;
+    dot++; // Move past the dot
+    
+    char ext[16];
+    snprintf(ext, sizeof(ext), "%s", dot);
+    for (char *p = ext; *p; ++p) {
+        *p = tolower(*p);
+    }
+    
+    if (strcmp(ext, "jpg") == 0 || strcmp(ext, "jpeg") == 0 ||
+        strcmp(ext, "png") == 0 || strcmp(ext, "gif") == 0 ||
+        strcmp(ext, "bmp") == 0 || strcmp(ext, "tiff") == 0 ||
+        strcmp(ext, "ico") == 0) {
+        return false;
+    }
+    return true;
 }

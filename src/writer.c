@@ -60,7 +60,8 @@ void write_tree_structure(FILE *out, FileList *list, DocumentInfo *info) {
 }
 
 void write_file_content(FILE *out, const char *path, DocumentInfo *info) {
-    if (is_binary_file(path)) {
+    // If file is detected as binary OR its extension indicates a binary file, do not print its contents.
+    if (is_binary_file(path) || !is_text_file_by_extension(path)) {
         const char *binary_text = "*Binary file*\n";
         fprintf(out, "%s", binary_text);
         calculate_token_stats(binary_text, info);
@@ -69,6 +70,7 @@ void write_file_content(FILE *out, const char *path, DocumentInfo *info) {
         snprintf(size_text, sizeof(size_text), "- Size: %s\n", get_file_size(path));
         fprintf(out, "%s", size_text);
         calculate_token_stats(size_text, info);
+        return;
     }
     
     FILE *f = fopen(path, "r");

@@ -1,6 +1,7 @@
 #ifndef STATS_H
 #define STATS_H
 
+#include <stdbool.h>
 #include "dirdoc.h"
 
 /* Calculates token and size statistics for the given string and updates DocumentInfo.
@@ -32,5 +33,11 @@ char *get_file_size(const char *path);
  * @return: true if binary, false otherwise.
  */
 bool is_binary_file(const char *path);
+
+/*
+ * Determines whether a file should be treated as a text file based on its extension.
+ * Returns false for common binary file extensions.
+ */
+bool is_text_file_by_extension(const char *filename);
 
 #endif // STATS_H

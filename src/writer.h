@@ -36,4 +36,9 @@ int finalize_output(const char *out_path, DocumentInfo *info);
  */
 void set_split_options(int enabled, double limit_mb);
 
+/* Main documentation generation function.
+ * Returns 0 on success, non-zero on failure.
+ */
+int document_directory(const char *input_dir, const char *output_file, int flags);
+
 #endif // WRITER_H
