@@ -2,3 +2,5 @@ deps/*
 build/*
 .vscode/*
 .git/*
+secrets/*
+directory_documentation.md
