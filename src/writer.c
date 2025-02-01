@@ -146,13 +146,76 @@ int finalize_output(const char *out_path, DocumentInfo *info) {
     char header[256];
     snprintf(header, sizeof(header), "Token Size: %zu\n\n", info->total_tokens);
     
-    // Create the final content with header
     size_t header_len = strlen(header);
     size_t new_size = header_len + strlen(file_content) + 1;
     char *new_content = malloc(new_size);
     strcpy(new_content, header);
     strcat(new_content, file_content);
     free(file_content);
+    
+    // If split was not explicitly requested and the content is large, prompt interactively.
+    if (!split_enabled && new_size > split_limit_bytes) {
+        double size_mb = new_size / (1024.0 * 1024.0);
+        printf("The generated documentation is estimated to be %.2f MB.\n", size_mb);
+        printf("Choose an option:\n");
+        printf("  [S]plit output into multiple files (default limit is %.2f MB, press S to specify a new size)\n", split_limit_bytes / (1024.0 * 1024.0));
+        printf("  [B]uild structure only (skip file contents)\n");
+        printf("  [C]ontinue as is (do not split)\n");
+        printf("  [Q]uit creation\n");
+        printf("Enter your choice (S/B/C/Q): ");
+        fflush(stdout);
+        
+        char choice[16];
+        if (!fgets(choice, sizeof(choice), stdin)) {
+            free(new_content);
+            return 1;
+        }
+        
+        // Remove trailing newline if any
+        choice[strcspn(choice, "\r\n")] = '\0';
+        
+        if (choice[0] == 'S' || choice[0] == 's') {
+            // Ask for new limit in MB (offer default)
+            printf("Enter maximum size in MB for each split file (default %.2f MB): ", split_limit_bytes / (1024.0 * 1024.0));
+            fflush(stdout);
+            char input[32];
+            if (fgets(input, sizeof(input), stdin)) {
+                // Remove trailing newline
+                input[strcspn(input, "\r\n")] = '\0';
+                if (strlen(input) > 0) {
+                    double new_limit = atof(input);
+                    if (new_limit > 0) {
+                        split_limit_bytes = (size_t)(new_limit * 1024 * 1024);
+                    } else {
+                        printf("Invalid input. Using default split limit.\n");
+                    }
+                }
+            }
+            split_enabled = 1;
+        } else if (choice[0] == 'B' || choice[0] == 'b') {
+            // Build structure only: remove file contents by truncating at "## Contents"
+            char *contents_pos = strstr(new_content, "\n## Contents");
+            if (contents_pos) {
+                *contents_pos = '\0';
+                printf("Building structure only. File contents will be omitted.\n");
+            } else {
+                printf("Structure only marker not found. Proceeding without changes.\n");
+            }
+            split_enabled = 0;
+        } else if (choice[0] == 'C' || choice[0] == 'c') {
+            // Continue as is without splitting
+            split_enabled = 0;
+        } else if (choice[0] == 'Q' || choice[0] == 'q') {
+            // Quit creation
+            printf("Creation cancelled by user.\n");
+            free(new_content);
+            remove(out_path);
+            return 1;
+        } else {
+            printf("Unrecognized choice. Continuing as is without splitting.\n");
+            split_enabled = 0;
+        }
+    }
     
     // Write back to the original output file (temporary)
     FILE *out_final = fopen(out_path, "w");
@@ -164,48 +227,45 @@ int finalize_output(const char *out_path, DocumentInfo *info) {
     fputs(new_content, out_final);
     fclose(out_final);
 
-    // If split is not enabled, we're done.
-    if (!split_enabled) {
-        free(new_content);
-        return 0;
-    }
-    
-    // If split is enabled, split new_content into multiple files based on split_limit_bytes.
-    size_t total_size = strlen(new_content);
-    size_t part_count = total_size / split_limit_bytes;
-    if (total_size % split_limit_bytes != 0) {
-        part_count++;
-    }
-    
-    for (size_t i = 0; i < part_count; i++) {
-        // Create new file name: original name with _part<number> suffix before extension (if any)
-        char part_filename[MAX_PATH_LEN];
-        char *dot = strrchr((char *)out_path, '.');
-        if (dot) {
-            size_t basename_len = dot - out_path;
-            snprintf(part_filename, sizeof(part_filename), "%.*s_part%zu%s", (int)basename_len, out_path, i+1, dot);
-        } else {
-            snprintf(part_filename, sizeof(part_filename), "%s_part%zu", out_path, i+1);
+    // If splitting is enabled, split new_content into multiple files based on split_limit_bytes.
+    if (split_enabled) {
+        size_t total_size = strlen(new_content);
+        size_t part_count = total_size / split_limit_bytes;
+        if (total_size % split_limit_bytes != 0) {
+            part_count++;
         }
         
-        FILE *part_file = fopen(part_filename, "w");
-        if (!part_file) {
-            fprintf(stderr, "Error: Cannot create split output file '%s'\n", part_filename);
-            free(new_content);
-            return 1;
+        for (size_t i = 0; i < part_count; i++) {
+            // Create new file name: original name with _part<number> suffix before extension (if any)
+            char part_filename[MAX_PATH_LEN];
+            char *dot = strrchr((char *)out_path, '.');
+            if (dot) {
+                size_t basename_len = dot - out_path;
+                snprintf(part_filename, sizeof(part_filename), "%.*s_part%zu%s", (int)basename_len, out_path, i+1, dot);
+            } else {
+                snprintf(part_filename, sizeof(part_filename), "%s_part%zu", out_path, i+1);
+            }
+            
+            FILE *part_file = fopen(part_filename, "w");
+            if (!part_file) {
+                fprintf(stderr, "Error: Cannot create split output file '%s'\n", part_filename);
+                free(new_content);
+                return 1;
+            }
+            
+            size_t offset = i * split_limit_bytes;
+            size_t bytes_to_write = split_limit_bytes;
+            if (offset + bytes_to_write > total_size) {
+                bytes_to_write = total_size - offset;
+            }
+            fwrite(new_content + offset, 1, bytes_to_write, part_file);
+            fclose(part_file);
         }
         
-        size_t offset = i * split_limit_bytes;
-        size_t bytes_to_write = split_limit_bytes;
-        if (offset + bytes_to_write > total_size) {
-            bytes_to_write = total_size - offset;
-        }
-        fwrite(new_content + offset, 1, bytes_to_write, part_file);
-        fclose(part_file);
+        // Remove the original unsplit output file.
+        remove(out_path);
     }
     
-    // Optionally, remove the original unsplit output file.
-    remove(out_path);
     free(new_content);
     return 0;
 }
