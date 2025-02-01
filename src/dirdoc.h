@@ -26,21 +26,10 @@ typedef struct {
     size_t total_tokens;
 } DocumentInfo;
 
-/* Generates documentation for the specified directory.
+/* Main documentation generation function.
  * Returns 0 on success, non-zero on failure.
  */
 int document_directory(const char *input_dir, const char *output_file, int flags);
-
-char *get_default_output(const char *input_dir);
-bool is_binary_file(const char *path);
-char *get_file_hash(const char *path);
-char *get_file_size(const char *path);
-void write_file_content(FILE *out, const char *path, DocumentInfo *info);
-/* Updates token and size counters in DocumentInfo based on the provided string. */
-void calculate_token_stats(const char *str, DocumentInfo *info);
-int count_max_backticks(const char *content);
-void print_terminal_stats(const char *output_path, const DocumentInfo *info);
-
 
 /* Returns a default output filename based on the input directory. */
 char *get_default_output(const char *input_dir);

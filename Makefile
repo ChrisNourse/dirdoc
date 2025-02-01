@@ -14,6 +14,9 @@ LDFLAGS =
 COSMO_ZIP_URL = https://github.com/jart/cosmopolitan/releases/download/4.0.2/cosmocc-4.0.2.zip
 COSMO_ZIP     = cosmocc-4.0.2.zip
 
+# Dynamically collect all .c files from src, excluding the deprecated dirdoc_impl.c.
+SOURCES = $(filter-out $(SRC_DIR)/dirdoc_impl.c, $(wildcard $(SRC_DIR)/*.c))
+
 .PHONY: all clean super_clean deps help
 
 all: deps $(BUILD_DIR)/dirdoc
@@ -48,11 +51,7 @@ $(DEPS_DIR)/$(COSMO_ZIP):
 $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
 
-$(BUILD_DIR)/dirdoc: \
-	$(SRC_DIR)/dirdoc.c \
-	$(SRC_DIR)/dirdoc_impl.c \
-	$(SRC_DIR)/gitignore.c \
-	| $(BUILD_DIR) deps
+$(BUILD_DIR)/dirdoc: $(SOURCES) | $(BUILD_DIR) deps
 	@echo "⏳ Building dirdoc..."
 	$(CC) $(CFLAGS) -I$(DEPS_DIR)/cosmocc/include -o $@ $^ $(LDFLAGS)
 	@echo "✅ Build complete"

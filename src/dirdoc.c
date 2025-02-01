@@ -1,14 +1,8 @@
 #include <cosmo.h>
 #include <ctype.h>
-#include <dirent.h>
-#include <errno.h>
-#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/stat.h>
-#include <unistd.h>
-
 #include "dirdoc.h"
 
 static void print_help() {
@@ -22,8 +16,7 @@ static void print_help() {
            "  dirdoc /path/to/dir\n"
            "  dirdoc -o custom.md /path/to/dir\n"
            "  dirdoc --no-gitignore /path/to/dir\n"
-           "  dirdoc --structure-only /path/to/dir\n"
-           "  dirdoc --ng /path/to/dir\n");
+           "  dirdoc --structure-only /path/to/dir\n");
 }
 
 char *get_default_output(const char *input_dir) {
@@ -46,22 +39,17 @@ int main(int argc, char *argv[]) {
         if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0) {
             print_help();
             return 0;
-        }
-        else if ((strcmp(argv[i], "-o") == 0 || strcmp(argv[i], "--output") == 0) && i + 1 < argc) {
+        } else if ((strcmp(argv[i], "-o") == 0 || strcmp(argv[i], "--output") == 0) && i + 1 < argc) {
             output_file = argv[++i];
-        }
-        else if (strcmp(argv[i], "--no-gitignore") == 0 || strcmp(argv[i], "--ng") == 0) {
+        } else if (strcmp(argv[i], "--no-gitignore") == 0 || strcmp(argv[i], "--ng") == 0) {
             flags |= IGNORE_GITIGNORE;
-        }
-        else if (strcmp(argv[i], "-s") == 0 || strcmp(argv[i], "--structure-only") == 0) {
+        } else if (strcmp(argv[i], "-s") == 0 || strcmp(argv[i], "--structure-only") == 0) {
             flags |= STRUCTURE_ONLY;
-        }
-        else if (argv[i][0] == '-') {
+        } else if (argv[i][0] == '-') {
             fprintf(stderr, "Unknown option: %s\n", argv[i]);
             print_help();
             return 1;
-        }
-        else {
+        } else {
             if (input_dir) {
                 fprintf(stderr, "Multiple directories specified\n");
                 print_help();
@@ -77,5 +65,6 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
+    // Call document_directory from the writer module.
     return document_directory(input_dir, output_file, flags);
 }
