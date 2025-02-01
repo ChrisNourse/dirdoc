@@ -318,7 +318,7 @@ void write_file_content(FILE *out, const char *path, DocumentInfo *info) {
     int max_ticks = count_max_backticks(content);
     int fence_count = (max_ticks < 3) ? 3 : (max_ticks + 1);
     const char *lang = get_language_from_extension(path);
-    
+
     for (int i = 0; i < fence_count; i++) {
         fputc('`', out);
     }
@@ -327,7 +327,7 @@ void write_file_content(FILE *out, const char *path, DocumentInfo *info) {
         fprintf(out, "%s", lang);
     }
     fputc('\n', out);
-    
+
     fprintf(out, "%s", content);
     calculate_token_stats(content, info);
     
@@ -421,5 +421,36 @@ int document_directory(const char *input_dir, const char *output_file, int flags
     fclose(out);
     free_file_list(&files);
     free_gitignore(&gitignore);
+
+    // Prepend token size header to the output file
+    FILE *in = fopen(out_path, "r");
+    if (!in) {
+        fprintf(stderr, "Error: Cannot reopen output file '%s' for reading\n", out_path);
+        return 1;
+    }
+    fseek(in, 0, SEEK_END);
+    long fsize = ftell(in);
+    fseek(in, 0, SEEK_SET);
+    char *file_content = malloc(fsize + 1);
+    if (fread(file_content, 1, fsize, in) != (size_t)fsize) {
+        fprintf(stderr, "Error: Reading output file '%s'\n", out_path);
+        free(file_content);
+        fclose(in);
+        return 1;
+    }
+    file_content[fsize] = '\0';
+    fclose(in);
+
+    FILE *out_final = fopen(out_path, "w");
+    if (!out_final) {
+        fprintf(stderr, "Error: Cannot reopen output file '%s' for writing\n", out_path);
+        free(file_content);
+        return 1;
+    }
+    fprintf(out_final, "Token Size: %zu\n\n", info.total_tokens);
+    fputs(file_content, out_final);
+    fclose(out_final);
+    free(file_content);
+
     return 0;
 }
