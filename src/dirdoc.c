@@ -15,13 +15,15 @@ static void print_help() {
            "  -s,         --structure-only  Generate structure only, no file content\n"
            "  -sp,        --split           Enable split output. Optionally, specify a limit in MB by appending -l <MB>\n"
            "  -l,         --limit           (Used with -sp) Set maximum file size in MB for each split file (default: 18)\n"
+           "  -ig,        --include-git     Include .git folders in the documentation (default: ignored)\n"
            "\nExamples:\n"
            "  dirdoc /path/to/dir\n"
            "  dirdoc -o custom.md /path/to/dir\n"
            "  dirdoc --no-gitignore /path/to/dir\n"
            "  dirdoc --structure-only /path/to/dir\n"
            "  dirdoc -sp /path/to/dir\n"
-           "  dirdoc -sp -l 10 /path/to/dir\n");
+           "  dirdoc -sp -l 10 /path/to/dir\n"
+           "  dirdoc --include-git /path/to/dir\n");
 }
 
 char *get_default_output(const char *input_dir) {
@@ -74,6 +76,8 @@ int main(int argc, char *argv[]) {
             if (i + 1 < argc) {
                 i++; // Skip the limit value
             }
+        } else if ((strcmp(argv[i], "-ig") == 0) || (strcmp(argv[i], "--include-git") == 0)) {
+            flags |= INCLUDE_GIT;
         } else if (argv[i][0] == '-') {
             fprintf(stderr, "Unknown option: %s\n", argv[i]);
             print_help();

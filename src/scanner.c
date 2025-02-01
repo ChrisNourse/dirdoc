@@ -60,7 +60,7 @@ int compare_entries(const void *a, const void *b) {
     return strcmp(fa->path, fb->path);
 }
 
-bool scan_directory(const char *dir_path, const char *rel_path, FileList *list, int depth, const GitignoreList *gitignore) {
+bool scan_directory(const char *dir_path, const char *rel_path, FileList *list, int depth, const GitignoreList *gitignore, int flags) {
     if (gitignore && rel_path && match_gitignore(rel_path, gitignore)) {
         return false;
     }
@@ -75,6 +75,11 @@ bool scan_directory(const char *dir_path, const char *rel_path, FileList *list, 
     struct dirent *entry;
     while ((entry = readdir(dir)) != NULL) {
         if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
+            continue;
+        }
+
+        // By default, ignore .git folders unless INCLUDE_GIT flag is set.
+        if (!(flags & INCLUDE_GIT) && strcmp(entry->d_name, ".git") == 0) {
             continue;
         }
 
@@ -95,7 +100,7 @@ bool scan_directory(const char *dir_path, const char *rel_path, FileList *list, 
             bool is_subdir = S_ISDIR(st.st_mode);
             add_file_entry(list, rel_entry_path, is_subdir, depth);
             if (is_subdir) {
-                has_entries |= scan_directory(full_path, rel_entry_path, list, depth + 1, gitignore);
+                has_entries |= scan_directory(full_path, rel_entry_path, list, depth + 1, gitignore, flags);
             }
         }
     }

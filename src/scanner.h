@@ -31,9 +31,10 @@ void free_file_list(FileList *list);
  * @param list: Pointer to the FileList to populate.
  * @param depth: Current depth level.
  * @param gitignore: Pointer to a GitignoreList structure (can be NULL).
+ * @param flags: Flags controlling scanning behavior (e.g., INCLUDE_GIT)
  * @return: true if scanning was successful, false otherwise.
  */
-bool scan_directory(const char *dir_path, const char *rel_path, FileList *list, int depth, const GitignoreList *gitignore);
+bool scan_directory(const char *dir_path, const char *rel_path, FileList *list, int depth, const GitignoreList *gitignore, int flags);
 
 /* Comparison function for qsort to order FileEntry items.
  * @return: Negative if a < b, zero if equal, positive if a > b.

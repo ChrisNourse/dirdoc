@@ -15,6 +15,7 @@ extern "C" {
 #define IGNORE_GITIGNORE 0x01
 #define STRUCTURE_ONLY   0x02
 #define SPLIT_OUTPUT     0x04  // New flag: split output into multiple files
+#define INCLUDE_GIT      0x08  // New flag: include .git folders
 
 typedef struct {
     char *path;

@@ -281,7 +281,7 @@ int document_directory(const char *input_dir, const char *output_file, int flags
     FileList files;
     init_file_list(&files);
     
-    bool success = scan_directory(input_dir, NULL, &files, 0, (!(flags & IGNORE_GITIGNORE)) ? &gitignore : NULL);
+    bool success = scan_directory(input_dir, NULL, &files, 0, (!(flags & IGNORE_GITIGNORE)) ? &gitignore : NULL, flags);
     if (!success) {
         fprintf(stderr, "Error: No files or folders found in directory '%s'\n", input_dir);
         free_file_list(&files);
