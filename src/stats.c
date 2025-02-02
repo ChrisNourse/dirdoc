@@ -6,31 +6,23 @@
 #include "stats.h"
 
 void calculate_token_stats(const char *str, DocumentInfo *info) {
-    bool in_word = false;
-    const char *p = str;
-    
-    while (*p) {
-        if (isspace((unsigned char)*p) || *p == '\n' || *p == '\t') {
-            if (in_word) {
-                info->total_tokens++;
-                in_word = false;
+    size_t len = strlen(str);
+    info->total_size += len;
+    size_t i = 0;
+    while (i < len) {
+        if (isspace((unsigned char)str[i])) {
+            i++;
+            continue;
+        }
+        if (isalnum((unsigned char)str[i]) || str[i] == '_') {
+            info->total_tokens++;
+            while (i < len && (isalnum((unsigned char)str[i]) || str[i] == '_')) {
+                i++;
             }
         } else {
-            if (!in_word) {
-                in_word = true;
-            }
-        }
-        
-        if (*p == '#' || *p == '*' || *p == '_' || *p == '`' || *p == '[' ||
-            *p == ']' || *p == '(' || *p == ')' || *p == '|' || *p == '-') {
             info->total_tokens++;
+            i++;
         }
-        
-        info->total_size++;
-        p++;
-    }
-    if (in_word) {
-        info->total_tokens++;
     }
 }
 
@@ -46,7 +38,7 @@ int count_max_backticks(const char *content) {
             if (current_count > max_count) {
                 max_count = current_count;
             }
-            current_count = 0;
+           	current_count = 0;
         }
         p++;
     }
