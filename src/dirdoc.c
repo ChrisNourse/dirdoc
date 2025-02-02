@@ -7,16 +7,16 @@
 #include "writer.h"  // Include writer.h to set split options
 
 static void print_help() {
-    printf("Usage: dirdoc [options] <directory>\n\n"
+    printf("Usage: dirdoc [OPTIONS] <directory>\n\n"
            "Options:\n"
-           "  -h,         --help            Show this help message\n"
-           "  -o,         --output          Specify output file (default: directory_documentation.md)\n"
-           "  -ngi,       --no-gitignore    Ignore .gitignore file\n"
-           "  -s,         --structure-only  Generate structure only, no file content\n"
-           "  -sp,        --split           Enable split output. Optionally, specify a limit in MB by appending -l <MB>\n"
-           "  -l,         --limit           (Used with -sp) Set maximum file size in MB for each split file (default: 18)\n"
-           "  -ig,        --include-git     Include .git folders in the documentation (default: ignored)\n"
-           "\nExamples:\n"
+           "  -h,   --help               Show this help message.\n"
+           "  -o,   --output <file>      Specify output file (default: directory_documentation.md).\n"
+           "  -ngi, --no-gitignore       Ignore .gitignore file.\n"
+           "  -s,   --structure-only     Generate structure only (skip file contents).\n"
+           "  -sp,  --split              Enable split output. Optionally, use -l/--limit to specify maximum file size in MB (default: 18).\n"
+           "  -l,   --limit <limit>      Set maximum file size in MB for each split file (used with -sp).\n"
+           "  -ig,  --include-git        Include .git folders in documentation (default: ignored).\n\n"
+           "Examples:\n"
            "  dirdoc /path/to/dir\n"
            "  dirdoc -o custom.md /path/to/dir\n"
            "  dirdoc --no-gitignore /path/to/dir\n"
@@ -60,12 +60,12 @@ int main(int argc, char *argv[]) {
             flags |= STRUCTURE_ONLY;
         } else if ((strcmp(argv[i], "-sp") == 0) || (strcmp(argv[i], "--split") == 0)) {
             flags |= SPLIT_OUTPUT;
-            // Check if the next argument is -l or --limit
-            if (i + 2 < argc && 
+            // Check if the next arguments specify a limit with -l or --limit
+            if (i + 2 < argc &&
                 ((strcmp(argv[i+1], "-l") == 0) || (strcmp(argv[i+1], "--limit") == 0))) {
                 split_limit_mb = atof(argv[i+2]);
                 if (split_limit_mb <= 0) {
-                    fprintf(stderr, "Invalid split limit specified. Using default of 18 MB.\n");
+                    fprintf(stderr, "Error: Invalid split limit specified. Using default of 18 MB.\n");
                     split_limit_mb = 18.0;
                 }
                 i += 2;
@@ -79,12 +79,12 @@ int main(int argc, char *argv[]) {
         } else if ((strcmp(argv[i], "-ig") == 0) || (strcmp(argv[i], "--include-git") == 0)) {
             flags |= INCLUDE_GIT;
         } else if (argv[i][0] == '-') {
-            fprintf(stderr, "Unknown option: %s\n", argv[i]);
+            fprintf(stderr, "Error: Unknown option: %s\n", argv[i]);
             print_help();
             return 1;
         } else {
             if (input_dir) {
-                fprintf(stderr, "Multiple directories specified\n");
+                fprintf(stderr, "Error: Multiple directories specified.\n");
                 print_help();
                 return 1;
             }
@@ -93,7 +93,7 @@ int main(int argc, char *argv[]) {
     }
 
     if (!input_dir) {
-        fprintf(stderr, "No directory specified\n");
+        fprintf(stderr, "Error: No directory specified.\n");
         print_help();
         return 1;
     }

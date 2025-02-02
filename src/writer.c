@@ -101,11 +101,11 @@ void write_file_content(FILE *out, const char *path, DocumentInfo *info) {
     int fence_count = (max_ticks < 3) ? 3 : (max_ticks + 1);
     const char *lang = get_language_from_extension(path);
     
+    // Write opening fence without an extra space before the language annotation.
     for (int i = 0; i < fence_count; i++) {
         fputc('`', out);
     }
     if (strlen(lang) > 0) {
-        fputc(' ', out);
         fprintf(out, "%s", lang);
     }
     fputc('\n', out);
@@ -117,6 +117,7 @@ void write_file_content(FILE *out, const char *path, DocumentInfo *info) {
         fprintf(out, "\n");
     }
     
+    // Write closing fence.
     for (int i = 0; i < fence_count; i++) {
         fputc('`', out);
     }
@@ -169,13 +170,13 @@ int finalize_output(const char *out_path, DocumentInfo *info) {
     // If split was not explicitly requested and the content is large, prompt interactively.
     if (!split_enabled && new_size > split_limit_bytes) {
         double size_mb = new_size / (1024.0 * 1024.0);
-        printf("The generated documentation is estimated to be %.2f MB.\n", size_mb);
+        printf("⏳ The generated documentation is estimated to be %.2f MB.\n", size_mb);
         printf("Choose an option:\n");
-        printf("  [S]plit output into multiple files (default limit is %.2f MB, press S to specify a new size)\n", split_limit_bytes / (1024.0 * 1024.0));
-        printf("  [B]uild structure only (skip file contents)\n");
-        printf("  [C]ontinue as is (do not split)\n");
-        printf("  [Q]uit creation\n");
-        printf("Enter your choice (S/B/C/Q): ");
+        printf("  [S] Split output into multiple files (default limit: %.2f MB)\n", split_limit_bytes / (1024.0 * 1024.0));
+        printf("  [B] Build structure only (skip file contents)\n");
+        printf("  [C] Continue as is (do not split)\n");
+        printf("  [Q] Quit creation\n");
+        printf("Enter your choice [S/B/C/Q]: ");
         fflush(stdout);
         
         char choice[16];
@@ -210,7 +211,7 @@ int finalize_output(const char *out_path, DocumentInfo *info) {
             char *contents_pos = strstr(new_content, "\n## Contents");
             if (contents_pos) {
                 *contents_pos = '\0';
-                printf("Building structure only. File contents will be omitted.\n");
+                printf("✅ Building structure only. File contents will be omitted.\n");
             } else {
                 printf("Structure only marker not found. Proceeding without changes.\n");
             }
@@ -275,6 +276,7 @@ int finalize_output(const char *out_path, DocumentInfo *info) {
             fclose(part_file);
         }
         
+        printf("✅ Output successfully split into %zu parts.\n", part_count);
         // Remove the original unsplit output file.
         remove(out_path);
     }
@@ -291,6 +293,7 @@ int document_directory(const char *input_dir, const char *output_file, int flags
     
     char *out_path = output_file ? (char *)output_file : get_default_output(input_dir);
     
+    fprintf(stderr, "⏳ Scanning directory '%s'...\n", input_dir);
     FileList files;
     init_file_list(&files);
     
@@ -301,6 +304,7 @@ int document_directory(const char *input_dir, const char *output_file, int flags
         free_gitignore(&gitignore);
         return 1;
     }
+    fprintf(stderr, "✅ Directory scan complete. Found %zu entries.\n", files.count);
     
     FILE *out = fopen(out_path, "w");
     if (!out) {
@@ -323,12 +327,14 @@ int document_directory(const char *input_dir, const char *output_file, int flags
     fprintf(out, "```\n");
     
     qsort(files.entries, files.count, sizeof(FileEntry), compare_entries);
+    fprintf(stderr, "⏳ Generating directory structure...\n");
     write_tree_structure(out, &files, &info);
     
     if (!(flags & STRUCTURE_ONLY)) {
         const char *contents_header = "\n## Contents\n\n";
         fprintf(out, "%s", contents_header);
         calculate_token_stats(contents_header, &info);
+        fprintf(stderr, "⏳ Adding file contents...\n");
         
         for (size_t i = 0; i < files.count; i++) {
             FileEntry *entry = &files.entries[i];
