@@ -1,5 +1,7 @@
 # Dirdoc
 
+![Dirdoc Logo](path/to/placeholder-logo.png)
+
 Dirdoc is a command-line tool designed to quickly and easily package an entire codebase into a single (or multiple) Markdown file. This packaged document includes a comprehensive directory structure, file contents with syntax highlighting, and token/size statistics. It is especially useful for sending codebases to LLMs for analysis, bug fixing, or feature enhancements.
 
 ## Features
@@ -102,11 +104,12 @@ Contributions are welcome! Please feel free to open issues or submit pull reques
 
 ## License
 
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License. See the LICENSE file for details.
 
 ## Acknowledgements
 
-- Built with Cosmopolitan Libc.
-- Inspired by the need for a comprehensive yet portable documentation format for codebases.
+- Built with [Cosmopolitan Libc](https://github.com/jart/cosmopolitan).  
+- For more information on Cosmo projects, visit:
+  - [Cosmopolitan Documentation](https://github.com/jart/cosmopolitan/blob/master/docs/README.md)
 
 ---
