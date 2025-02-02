@@ -1,0 +1,112 @@
+# Dirdoc
+
+Dirdoc is a command-line tool designed to quickly and easily package an entire codebase into a single (or multiple) Markdown file. This packaged document includes a comprehensive directory structure, file contents with syntax highlighting, and token/size statistics. It is especially useful for sending codebases to LLMs for analysis, bug fixing, or feature enhancements.
+
+## Features
+
+- **Comprehensive Documentation:**  
+  Automatically scans a directory and generates a Markdown document that details the directory layout and includes file contents.
+
+- **Syntax Highlighting:**  
+  Supports language detection based on file extensions for enhanced readability in Markdown fenced code blocks.
+
+- **Token and Size Statistics:**  
+  Estimates and displays token counts and file size metrics to give insight into the generated document.
+
+- **.gitignore Integration:**  
+  Honors .gitignore files, allowing you to exclude specific files or directories from the documentation.
+
+- **Output Splitting:**  
+  Offers the option to split the output into multiple files if the generated document exceeds a specified size. This is particularly useful for meeting size limitations when sending the document to an LLM.
+
+- **Flexible Modes:**  
+  Provides options to generate structure-only documentation (skipping file contents) or to include everything.
+
+## Installation
+
+1. **Clone the Repository:**
+
+   ```bash
+   git clone https://github.com/yourusername/dirdoc.git
+   cd dirdoc
+   ```
+
+2. **Build the Application:**
+
+   The project uses a Makefile for building. Run the following command to build the executable:
+
+   ```bash
+   make all
+   ```
+
+   This command will also download the required Cosmopolitan Libc dependency if it is not already present.
+
+## Usage
+
+After building, you can run the application from the `build` directory:
+
+```bash
+./build/dirdoc --help
+```
+
+### Example Commands
+
+- **Generate full documentation:**
+
+  ```bash
+  ./build/dirdoc /path/to/codebase
+  ```
+
+- **Specify a custom output file:**
+
+  ```bash
+  ./build/dirdoc -o custom_documentation.md /path/to/codebase
+  ```
+
+- **Ignore .gitignore rules:**
+
+  ```bash
+  ./build/dirdoc --no-gitignore /path/to/codebase
+  ```
+
+- **Generate structure-only documentation:**
+
+  ```bash
+  ./build/dirdoc --structure-only /path/to/codebase
+  ```
+
+- **Enable split output with a custom size limit:**
+
+  ```bash
+  ./build/dirdoc --split --limit 10 /path/to/codebase
+  ```
+
+- **Include .git folders in the documentation:**
+
+  ```bash
+  ./build/dirdoc --include-git /path/to/codebase
+  ```
+
+## Use Cases
+
+Dirdoc is ideal for scenarios where you need to:
+
+- Package an entire codebase into a single document for LLM analysis.
+- Share a complete, self-contained reference of your codebase with team members or collaborators.
+- Quickly debug or review a project by having both the structure and contents available in one file.
+- Generate documentation that can be easily inspected, shared, or version-controlled.
+
+## Contributing
+
+Contributions are welcome! Please feel free to open issues or submit pull requests if you have suggestions or improvements.
+
+## License
+
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+
+## Acknowledgements
+
+- Built with Cosmopolitan Libc.
+- Inspired by the need for a comprehensive yet portable documentation format for codebases.
+
+---
