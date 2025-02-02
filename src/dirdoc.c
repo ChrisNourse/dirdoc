@@ -41,6 +41,7 @@ char *get_default_output(const char *input_dir) {
     return buffer;
 }
 
+#ifndef UNIT_TEST
 /**
  * @brief Main entry point for the dirdoc application.
  *
@@ -125,3 +126,4 @@ int main(int argc, char *argv[]) {
     // Call document_directory from the writer module.
     return document_directory(input_dir, output_file, flags);
 }
+#endif  /* UNIT_TEST */

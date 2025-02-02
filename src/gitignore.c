@@ -148,7 +148,15 @@ bool match_gitignore(const char *path, const GitignoreList *gitignore) {
         bool anc   = gitignore->anchored[i];
         bool donly = gitignore->dir_only[i];
 
-        if (donly && !is_dir) {
+        if (donly) {
+            /* 
+             * For directory-only patterns, match if the path is exactly the pattern
+             * or if it starts with pattern followed by a '/'.
+             */
+            size_t pat_len = strlen(pattern);
+            if (strncmp(path, pattern, pat_len) == 0 && (path[pat_len] == '\0' || path[pat_len] == '/')) {
+                ignored = !neg;
+            }
             continue;
         }
 

@@ -4,6 +4,7 @@ SHELL = /bin/bash
 SRC_DIR   = src
 DEPS_DIR  = deps
 BUILD_DIR = build
+TEST_DIR  = tests
 
 # Compiler and Flags
 CC = $(DEPS_DIR)/cosmocc/bin/cosmocc
@@ -17,7 +18,10 @@ COSMO_ZIP     = cosmocc-4.0.2.zip
 # Dynamically collect all .c files from src
 SOURCES = $(wildcard $(SRC_DIR)/*.c)
 
-.PHONY: all clean super_clean deps help
+# Test source(s)
+TEST_SOURCES = $(wildcard $(TEST_DIR)/*.c)
+
+.PHONY: all clean super_clean deps help test build_temp clean_temp
 
 all: deps $(BUILD_DIR)/dirdoc
 	@echo "✅ Build completed successfully"
@@ -56,6 +60,29 @@ $(BUILD_DIR)/dirdoc: $(SOURCES) | $(BUILD_DIR) deps
 	$(CC) $(CFLAGS) -I$(DEPS_DIR)/cosmocc/include -o $@ $^ $(LDFLAGS)
 	@echo "✅ Build complete"
 
+$(BUILD_DIR)/dirdoc_test: $(TEST_SOURCES) $(SOURCES) | $(BUILD_DIR) deps
+	@echo "⏳ Building tests..."
+	$(CC) $(CFLAGS) -DUNIT_TEST -I. -I$(SRC_DIR) -I$(TEST_DIR) -I$(DEPS_DIR)/cosmocc/include -o $@ $^ $(LDFLAGS)
+	@echo "✅ Test build complete"
+
+# Updated target to build a test binary that does not clean up temp files (for manual inspection)
+$(BUILD_DIR)/temp_test: $(TEST_SOURCES) $(SOURCES) | $(BUILD_DIR) deps
+	@echo "⏳ Building temp test binary..."
+	$(CC) $(CFLAGS) -DUNIT_TEST -DINSPECT_TEMP -I. -I$(SRC_DIR) -I$(TEST_DIR) -I$(DEPS_DIR)/cosmocc/include -o $@ $^ $(LDFLAGS)
+	@echo "✅ Temp test build complete"
+
+build_temp: deps $(BUILD_DIR)/temp_test
+	@echo "✅ Temp test binary built. Run './$(BUILD_DIR)/temp_test' to generate temporary test files for inspection."
+
+clean_temp:
+	@echo "⏳ Removing temporary test files..."
+	rm -rf tmp
+	@echo "✅ Temp test files removed"
+
+test: deps $(BUILD_DIR)/dirdoc_test
+	@echo "🚀 Running tests..."
+	./$(BUILD_DIR)/dirdoc_test
+
 clean:
 	@echo "⏳ Cleaning build artifacts..."
 	rm -rf $(BUILD_DIR)
@@ -72,4 +99,7 @@ help:
 	@echo "  deps        - Download and set up dependencies"
 	@echo "  clean       - Remove build artifacts"
 	@echo "  super_clean - Remove build artifacts and dependencies"
+	@echo "  test        - Build and run the test suite"
+	@echo "  build_temp  - Build the test binary for generating temp test files (without auto-cleanup)"
+	@echo "  clean_temp  - Remove all temporary test files from the 'tmp' directory"
 	@echo "  help        - Show this help message"

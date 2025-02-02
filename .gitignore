@@ -4,3 +4,4 @@ build/*
 .git/*
 secrets/*
 directory_documentation*
+tmp/*
