@@ -329,7 +329,7 @@ int finalize_output(const char *out_path, DocumentInfo *info) {
 }
 
 /**
- * @brief Main function to generate directory documentation.
+ * @brief Main documentation generation function.
  *
  * Scans the specified directory, builds the structure and file content sections,
  * writes them to an output file, and finalizes the output (including splitting if necessary).
@@ -352,12 +352,32 @@ int document_directory(const char *input_dir, const char *output_file, int flags
     init_file_list(&files);
     
     bool success = scan_directory(input_dir, NULL, &files, 0, (!(flags & IGNORE_GITIGNORE)) ? &gitignore : NULL, flags);
+    /* 
+     * If scanning did not add any files but the directory itself is non-empty,
+     * warn the user that all files have been ignored.
+     */
     if (!success) {
-        fprintf(stderr, "Error: No files or folders found in directory '%s'\n", input_dir);
-        free_file_list(&files);
-        free_gitignore(&gitignore);
-        return 1;
+        DIR *d = opendir(input_dir);
+        int file_count = 0;
+        if (d) {
+            struct dirent *entry;
+            while ((entry = readdir(d)) != NULL) {
+                if (strcmp(entry->d_name, ".") && strcmp(entry->d_name, ".."))
+                    file_count++;
+            }
+            closedir(d);
+        }
+        if (file_count > 0) {
+            fprintf(stderr, "Warning: All files in directory '%s' were ignored by .gitignore.\n", input_dir);
+            /* Continue with an empty file list */
+        } else {
+            fprintf(stderr, "Error: No files or folders found in directory '%s'\n", input_dir);
+            free_file_list(&files);
+            free_gitignore(&gitignore);
+            return 1;
+        }
     }
+    
     fprintf(stderr, "✅ Directory scan complete. Found %zu entries.\n", files.count);
     
     FILE *out = fopen(out_path, "w");

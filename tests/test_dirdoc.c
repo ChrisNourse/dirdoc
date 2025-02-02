@@ -244,6 +244,45 @@ void test_gitignore_wildcards() {
     free(temp_dir);
 }
 
+/* Test for a folder where all files are ignored by .gitignore.
+ * This test creates a temporary directory with a .gitignore that ignores all *.txt files.
+ * It then creates only .txt files in the directory.
+ * We expect document_directory() to complete and warn that all files were ignored.
+ */
+void test_all_ignored_files() {
+    char *temp_dir = create_temp_dir();
+    // Create a .gitignore that ignores all .txt files.
+    create_file(temp_dir, ".gitignore", "*.txt\n");
+    
+    // Create several .txt files.
+    create_file(temp_dir, "file1.txt", "Content 1");
+    create_file(temp_dir, "file2.txt", "Content 2");
+    
+    // Call document_directory; output file will be the default.
+    const char *output_file = get_default_output(temp_dir);
+    int ret = document_directory(temp_dir, output_file, 0);
+    // Even though all files are ignored, the directory is non-empty so we expect success (return 0)
+    assert(ret == 0);
+    
+    // Open the output file and check that it exists (may only have the structure header).
+    FILE *f = fopen(output_file, "r");
+    assert(f != NULL);
+    fclose(f);
+    
+    printf("✔ test_all_ignored_files passed\n");
+    
+    // Cleanup: remove the output file and the temporary directory.
+    remove(output_file);
+#ifndef INSPECT_TEMP
+    if (remove_directory_recursive(temp_dir) == 0) {
+        printf("Folder '%s' removed successfully.\n", temp_dir);
+    } else {
+        printf("Failed to remove folder '%s'.\n", temp_dir);
+    }
+#endif
+    free(temp_dir);
+}
+
 /* Test the directory scanner:
  * Create a temporary directory structure with files and directories,
  * then scan it and verify that the file count is as expected.
@@ -343,6 +382,7 @@ int main(void) {
     test_get_language_from_extension();
     test_gitignore();
     test_gitignore_wildcards();
+    test_all_ignored_files();
     test_scan_directory();
     test_stats();
     test_is_binary_file();
