@@ -8,6 +8,16 @@
 
 #define MAX_PATH_LEN 4096
 
+/**
+ * @brief Parses a single .gitignore pattern line.
+ *
+ * Adjusts the pattern for negation, anchoring, and directory-only options.
+ *
+ * @param line The line containing the pattern.
+ * @param is_negation Pointer to a boolean that is set to true if the pattern is negated.
+ * @param is_anchored Pointer to a boolean that is set to true if the pattern is anchored.
+ * @param is_dir_only Pointer to a boolean that is set to true if the pattern applies only to directories.
+ */
 static void parse_pattern(char *line, bool *is_negation, bool *is_anchored, bool *is_dir_only) {
     if (line[0] == '!') {
         *is_negation = true;
@@ -30,6 +40,15 @@ static void parse_pattern(char *line, bool *is_negation, bool *is_anchored, bool
     }
 }
 
+/**
+ * @brief Loads the .gitignore file from the given directory.
+ *
+ * Reads each non-comment, non-empty line from the .gitignore file and stores the pattern along with
+ * its negation, anchoring, and directory-only properties.
+ *
+ * @param dir_path The directory path.
+ * @param gitignore Pointer to a GitignoreList structure to populate.
+ */
 void load_gitignore(const char *dir_path, GitignoreList *gitignore) {
     gitignore->patterns = NULL;
     gitignore->negation = NULL;
@@ -78,6 +97,15 @@ void load_gitignore(const char *dir_path, GitignoreList *gitignore) {
     fclose(f);
 }
 
+/**
+ * @brief Checks if the parent folder matches a given pattern.
+ *
+ * This is used to handle cases where patterns like "folder/*" are intended to ignore the folder itself.
+ *
+ * @param path The file or directory path.
+ * @param pattern The pattern to compare.
+ * @return true if the parent folder matches the pattern, false otherwise.
+ */
 static bool parent_folder_match(const char *path, const char *pattern) {
     // If pattern ends with "/*", skip the folder itself
     // e.g. "builds/*" also ignores "builds"
@@ -93,6 +121,15 @@ static bool parent_folder_match(const char *path, const char *pattern) {
     return false;
 }
 
+/**
+ * @brief Determines whether the given path should be ignored based on the .gitignore patterns.
+ *
+ * Checks the file or directory against each pattern in the GitignoreList and applies negations and directory-only logic.
+ *
+ * @param path The file or directory path.
+ * @param gitignore Pointer to the GitignoreList structure.
+ * @return true if the path should be ignored, false otherwise.
+ */
 bool match_gitignore(const char *path, const GitignoreList *gitignore) {
     if (!gitignore || !gitignore->patterns) {
         return false;
@@ -137,6 +174,13 @@ bool match_gitignore(const char *path, const GitignoreList *gitignore) {
     return ignored;
 }
 
+/**
+ * @brief Frees the memory allocated for the GitignoreList.
+ *
+ * Releases all patterns and associated arrays, then resets the structure.
+ *
+ * @param gitignore Pointer to the GitignoreList to free.
+ */
 void free_gitignore(GitignoreList *gitignore) {
     if (!gitignore || !gitignore->patterns) {
         return;

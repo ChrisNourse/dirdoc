@@ -14,8 +14,8 @@ LDFLAGS =
 COSMO_ZIP_URL = https://github.com/jart/cosmopolitan/releases/download/4.0.2/cosmocc-4.0.2.zip
 COSMO_ZIP     = cosmocc-4.0.2.zip
 
-# Dynamically collect all .c files from src, excluding the deprecated dirdoc_impl.c.
-SOURCES = $(filter-out $(SRC_DIR)/dirdoc_impl.c, $(wildcard $(SRC_DIR)/*.c))
+# Dynamically collect all .c files from src
+SOURCES = $(wildcard $(SRC_DIR)/*.c)
 
 .PHONY: all clean super_clean deps help
 

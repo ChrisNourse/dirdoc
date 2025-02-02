@@ -6,6 +6,9 @@
 #include "dirdoc.h"
 #include "writer.h"  // Include writer.h to set split options
 
+/**
+ * @brief Prints the help/usage information to stdout.
+ */
 static void print_help() {
     printf("Usage: dirdoc [OPTIONS] <directory>\n\n"
            "Options:\n"
@@ -26,12 +29,28 @@ static void print_help() {
            "  dirdoc --include-git /path/to/dir\n");
 }
 
+/**
+ * @brief Returns the default output filename for the documentation.
+ *
+ * @param input_dir The input directory path.
+ * @return Pointer to the default output filename string.
+ */
 char *get_default_output(const char *input_dir) {
     static char buffer[MAX_PATH_LEN];
     snprintf(buffer, sizeof(buffer), "directory_documentation.md");
     return buffer;
 }
 
+/**
+ * @brief Main entry point for the dirdoc application.
+ *
+ * Parses command-line arguments, sets up options (including split options),
+ * and calls the document_directory function to generate the documentation.
+ *
+ * @param argc Argument count.
+ * @param argv Argument vector.
+ * @return int 0 on success, non-zero on failure.
+ */
 int main(int argc, char *argv[]) {
     const char *input_dir = NULL;
     const char *output_file = NULL;

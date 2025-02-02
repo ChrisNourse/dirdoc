@@ -16,11 +16,25 @@
 static int split_enabled = 0;
 static size_t split_limit_bytes = 18 * 1024 * 1024; // default 18 MB
 
+/**
+ * @brief Sets the options for splitting the output into multiple files.
+ *
+ * @param enabled Non-zero to enable splitting.
+ * @param limit_mb Maximum size per file in megabytes.
+ */
 void set_split_options(int enabled, double limit_mb) {
     split_enabled = enabled;
     split_limit_bytes = (size_t)(limit_mb * 1024 * 1024);
 }
 
+/**
+ * @brief Prints the documentation statistics to the terminal.
+ *
+ * Outputs the final token statistics and output file location.
+ *
+ * @param output_path The path of the output file.
+ * @param info Pointer to the DocumentInfo structure containing statistics.
+ */
 static void print_terminal_stats(const char *output_path, const DocumentInfo *info) {
     printf("\n✨ Directory documentation complete!\n");
     printf("📝 Output: %s\n", output_path);
@@ -29,6 +43,15 @@ static void print_terminal_stats(const char *output_path, const DocumentInfo *in
     printf("   - Total Size: %.2f MB\n", (double)info->total_size / (1024 * 1024));
 }
 
+/**
+ * @brief Writes the directory tree structure into the output file.
+ *
+ * Iterates over the FileList and prints a visual tree along with updating token statistics.
+ *
+ * @param out The output file stream.
+ * @param list Pointer to the FileList containing file and directory entries.
+ * @param info Pointer to the DocumentInfo structure for updating statistics.
+ */
 void write_tree_structure(FILE *out, FileList *list, DocumentInfo *info) {
     bool *has_sibling = calloc(MAX_PATH_LEN, sizeof(bool));
     for (size_t i = 0; i < list->count; i++) {
@@ -59,6 +82,16 @@ void write_tree_structure(FILE *out, FileList *list, DocumentInfo *info) {
     fprintf(out, "```\n");
 }
 
+/**
+ * @brief Writes the content of a file into the output stream using fenced code blocks.
+ *
+ * Checks whether the file is binary or text, then writes the file content along with language annotation,
+ * and updates the token statistics.
+ *
+ * @param out The output file stream.
+ * @param path The path to the file whose content is to be written.
+ * @param info Pointer to the DocumentInfo structure for updating statistics.
+ */
 void write_file_content(FILE *out, const char *path, DocumentInfo *info) {
     // If file is detected as binary OR its extension indicates a binary file, do not print its contents.
     if (is_binary_file(path) || !is_text_file_by_extension(path)) {
@@ -126,6 +159,16 @@ void write_file_content(FILE *out, const char *path, DocumentInfo *info) {
     free(content);
 }
 
+/**
+ * @brief Finalizes the output file by prepending a header and handling file splitting if required.
+ *
+ * Reads back the generated content, prepends a documentation summary header with token statistics,
+ * and if splitting is enabled and necessary, splits the file into multiple parts.
+ *
+ * @param out_path The output file path.
+ * @param info Pointer to the DocumentInfo structure with computed statistics.
+ * @return int 0 on success, non-zero on failure.
+ */
 int finalize_output(const char *out_path, DocumentInfo *info) {
     FILE *in = fopen(out_path, "r");
     if (!in) {
@@ -285,6 +328,17 @@ int finalize_output(const char *out_path, DocumentInfo *info) {
     return 0;
 }
 
+/**
+ * @brief Main function to generate directory documentation.
+ *
+ * Scans the specified directory, builds the structure and file content sections,
+ * writes them to an output file, and finalizes the output (including splitting if necessary).
+ *
+ * @param input_dir The directory to document.
+ * @param output_file The output file path (or NULL for default).
+ * @param flags Flags controlling the documentation generation (e.g., IGNORE_GITIGNORE, STRUCTURE_ONLY).
+ * @return int 0 on success, non-zero on failure.
+ */
 int document_directory(const char *input_dir, const char *output_file, int flags) {
     GitignoreList gitignore = {0};
     if (!(flags & IGNORE_GITIGNORE)) {

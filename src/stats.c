@@ -5,6 +5,15 @@
 #include <sys/stat.h>
 #include "stats.h"
 
+/**
+ * @brief Calculates token and size statistics for the given string.
+ *
+ * Iterates through the string to count tokens (alphanumeric sequences or individual non-alphanumerics)
+ * and accumulates the total size in bytes.
+ *
+ * @param str The input string.
+ * @param info Pointer to the DocumentInfo structure to update.
+ */
 void calculate_token_stats(const char *str, DocumentInfo *info) {
     size_t len = strlen(str);
     info->total_size += len;
@@ -26,6 +35,14 @@ void calculate_token_stats(const char *str, DocumentInfo *info) {
     }
 }
 
+/**
+ * @brief Counts the maximum number of consecutive backticks in the given content.
+ *
+ * Useful for determining the number of backticks needed for fenced code blocks.
+ *
+ * @param content The input content string.
+ * @return int The maximum consecutive count of backticks.
+ */
 int count_max_backticks(const char *content) {
     int max_count = 0;
     int current_count = 0;
@@ -48,6 +65,14 @@ int count_max_backticks(const char *content) {
     return max_count;
 }
 
+/**
+ * @brief Determines the programming language based on a file's extension.
+ *
+ * Returns a language string for syntax highlighting in Markdown fenced code blocks.
+ *
+ * @param filename The name or path of the file.
+ * @return const char* A string representing the programming language, or an empty string if not identified.
+ */
 const char *get_language_from_extension(const char *filename) {
     const char *base = strrchr(filename, '/');
     base = base ? base + 1 : filename;
@@ -81,6 +106,14 @@ const char *get_language_from_extension(const char *filename) {
     return "";
 }
 
+/**
+ * @brief Returns a human-readable file size for the given file path.
+ *
+ * Converts the file size into a more understandable unit (B, KB, MB, etc.).
+ *
+ * @param path The file path.
+ * @return char* A string representing the file size, or "unknown" if the file cannot be accessed.
+ */
 char *get_file_size(const char *path) {
     static char size[32];
     struct stat st;
@@ -100,12 +133,15 @@ char *get_file_size(const char *path) {
     return size;
 }
 
-/* 
- * Improved binary file detection:
+/**
+ * @brief Determines if a file is binary by checking its printable character ratio.
+ *
  * Reads up to 1024 bytes and calculates the ratio of printable characters.
- * Allowed printable characters are: tab (9), line feed (10), carriage return (13),
- * and characters in the range 32 to 126 inclusive.
- * If the ratio of printable characters is below 85%, the file is considered binary.
+ * If the ratio is below 85%, the file is considered binary.
+ *
+ * @param path The file path.
+ * @return true If the file is binary.
+ * @return false Otherwise.
  */
 bool is_binary_file(const char *path) {
     FILE *f = fopen(path, "rb");
@@ -131,9 +167,14 @@ bool is_binary_file(const char *path) {
     return false;
 }
 
-/*
- * Determines whether a file should be treated as a text file based on its extension.
+/**
+ * @brief Determines if a file should be treated as a text file based on its extension.
+ *
  * Returns false for common binary file extensions.
+ *
+ * @param filename The name or path of the file.
+ * @return true If the file is likely a text file.
+ * @return false If the file is likely binary.
  */
 bool is_text_file_by_extension(const char *filename) {
     const char *dot = strrchr(filename, '.');

@@ -9,12 +9,29 @@
 #include "gitignore.h"
 #include "dirdoc.h"
 
+/**
+ * @brief Initializes a FileList structure.
+ *
+ * Allocates initial memory for file entries and sets count and capacity.
+ *
+ * @param list Pointer to the FileList structure.
+ */
 void init_file_list(FileList *list) {
     list->capacity = 16;
     list->count = 0;
     list->entries = malloc(list->capacity * sizeof(FileEntry));
 }
 
+/**
+ * @brief Adds a new file entry to the FileList.
+ *
+ * Expands the array if needed and adds the entry with its path, directory flag, and depth.
+ *
+ * @param list Pointer to the FileList.
+ * @param path Relative path of the file or directory.
+ * @param is_dir Boolean indicating if the entry is a directory.
+ * @param depth Depth level in the directory hierarchy.
+ */
 void add_file_entry(FileList *list, const char *path, bool is_dir, int depth) {
     if (list->count >= list->capacity) {
         list->capacity *= 2;
@@ -27,6 +44,13 @@ void add_file_entry(FileList *list, const char *path, bool is_dir, int depth) {
     entry->depth = depth;
 }
 
+/**
+ * @brief Frees all memory associated with the FileList.
+ *
+ * Releases the memory for each file path and the entries array.
+ *
+ * @param list Pointer to the FileList.
+ */
 void free_file_list(FileList *list) {
     for (size_t i = 0; i < list->count; i++) {
         free(list->entries[i].path);
@@ -34,6 +58,15 @@ void free_file_list(FileList *list) {
     free(list->entries);
 }
 
+/**
+ * @brief Comparison function used for sorting FileEntry items.
+ *
+ * Compares based on parent directory names, then type (directory before file), then the full path.
+ *
+ * @param a Pointer to the first FileEntry.
+ * @param b Pointer to the second FileEntry.
+ * @return int Negative if a < b, zero if equal, positive if a > b.
+ */
 int compare_entries(const void *a, const void *b) {
     const FileEntry *fa = (const FileEntry *)a;
     const FileEntry *fb = (const FileEntry *)b;
@@ -60,6 +93,19 @@ int compare_entries(const void *a, const void *b) {
     return strcmp(fa->path, fb->path);
 }
 
+/**
+ * @brief Recursively scans a directory and populates the FileList with file and subdirectory entries.
+ *
+ * Optionally uses the provided GitignoreList to skip ignored files/directories and respects the flags.
+ *
+ * @param dir_path The absolute path of the directory to scan.
+ * @param rel_path The relative path from the root directory (can be NULL).
+ * @param list Pointer to the FileList to populate.
+ * @param depth Current depth level.
+ * @param gitignore Pointer to a GitignoreList (can be NULL).
+ * @param flags Flags controlling scanning behavior (e.g., INCLUDE_GIT).
+ * @return true if scanning was successful and entries were found, false otherwise.
+ */
 bool scan_directory(const char *dir_path, const char *rel_path, FileList *list, int depth, const GitignoreList *gitignore, int flags) {
     if (gitignore && rel_path && match_gitignore(rel_path, gitignore)) {
         return false;
