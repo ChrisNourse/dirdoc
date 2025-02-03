@@ -1,0 +1,49 @@
+name: CI Build and Test
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Setup dependencies on Linux
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential make curl unzip
+
+      - name: Setup dependencies on macOS
+        if: runner.os == 'macOS'
+        run: |
+          brew update
+          brew install make curl unzip
+
+      - name: Setup dependencies on Windows
+        if: runner.os == 'Windows'
+        run: |
+          choco install make -y
+          choco install curl -y
+          choco install unzip -y
+
+      - name: Build dirdoc
+        run: make all
+        shell: bash
+
+      - name: Run tests
+        run: make test
+        shell: bash
+
+      - name: Clean up build artifacts
+        run: make clean
+        shell: bash
