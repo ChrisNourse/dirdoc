@@ -101,7 +101,7 @@ Before building the project, ensure that your environment has the following:
 If you haven’t already, clone the repository and change into the project directory:
 
 ```bash
-git clone https://github.com/yourusername/dirdoc.git
+git clone https://github.com/chrisnourse/dirdoc.git
 cd dirdoc
 ```
 
