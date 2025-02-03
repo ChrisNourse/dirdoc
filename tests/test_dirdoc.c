@@ -283,6 +283,78 @@ void test_all_ignored_files() {
     free(temp_dir);
 }
 
+/**
+ * @brief Test for the new hierarchical compare_entries() function.
+ *
+ * This test creates several FileEntry objects with paths that test various edge cases:
+ * - A parent directory ("src") should sort before any file or directory within it (e.g., "src/main.c").
+ * - Two identical paths should compare equal.
+ * - Directories with different names should be ordered alphabetically.
+ * - Multiple components are compared component‐by‐component.
+ *
+ * The function uses assertions to ensure that compare_entries() returns the expected ordering.
+ */
+void test_compare_entries() {
+    // Test that a parent directory comes before its child file.
+    FileEntry fe1, fe2;
+    fe1.path = strdup("src");
+    fe1.is_dir = true;
+    fe1.depth = 0;
+    fe2.path = strdup("src/main.c");
+    fe2.is_dir = false;
+    fe2.depth = 1;
+    int cmp = compare_entries(&fe1, &fe2);
+    assert(cmp < 0);  // "src" should come before "src/main.c"
+
+    // Reverse order should yield a positive value.
+    cmp = compare_entries(&fe2, &fe1);
+    assert(cmp > 0);
+
+    // Test identical paths.
+    FileEntry fe3, fe4;
+    fe3.path = strdup("docs/readme.md");
+    fe3.is_dir = false;
+    fe3.depth = 1;
+    fe4.path = strdup("docs/readme.md");
+    fe4.is_dir = false;
+    fe4.depth = 1;
+    cmp = compare_entries(&fe3, &fe4);
+    assert(cmp == 0);
+
+    // Test ordering of two distinct top-level directories.
+    FileEntry fe5, fe6;
+    fe5.path = strdup("a");
+    fe5.is_dir = true;
+    fe5.depth = 0;
+    fe6.path = strdup("b");
+    fe6.is_dir = true;
+    fe6.depth = 0;
+    cmp = compare_entries(&fe5, &fe6);
+    assert(cmp < 0);  // "a" comes before "b"
+
+    // Test ordering with multiple components.
+    FileEntry fe7, fe8;
+    fe7.path = strdup("a/b/c");
+    fe7.is_dir = false;
+    fe7.depth = 2;
+    fe8.path = strdup("a/b/d");
+    fe8.is_dir = false;
+    fe8.depth = 2;
+    cmp = compare_entries(&fe7, &fe8);
+    assert(cmp < 0);  // "c" comes before "d"
+
+    free(fe1.path);
+    free(fe2.path);
+    free(fe3.path);
+    free(fe4.path);
+    free(fe5.path);
+    free(fe6.path);
+    free(fe7.path);
+    free(fe8.path);
+
+    printf("✔ test_compare_entries passed\n");
+}
+
 /* Test the directory scanner:
  * Create a temporary directory structure with files and directories,
  * then scan it and verify that the file count is as expected.
@@ -383,6 +455,7 @@ int main(void) {
     test_gitignore();
     test_gitignore_wildcards();
     test_all_ignored_files();
+    test_compare_entries();
     test_scan_directory();
     test_stats();
     test_is_binary_file();

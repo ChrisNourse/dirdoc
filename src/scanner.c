@@ -57,40 +57,67 @@ void free_file_list(FileList *list) {
     }
     free(list->entries);
 }
+/**
+ * @brief Compares two directory paths hierarchically.
+ *
+ * This function splits each input path into its individual components (using '/' as the delimiter)
+ * and compares corresponding components one by one. This hierarchical comparison ensures that a
+ * parent directory (e.g., "src") will always sort before any child file or directory (e.g., "src/main.c").
+ *
+ * @param path1 The first path string to compare.
+ * @param path2 The second path string to compare.
+ * @return int A negative value if path1 < path2, zero if path1 == path2, or a positive value if path1 > path2.
+ */
+static int compare_paths(const char *path1, const char *path2) {
+    const char *p1 = path1, *p2 = path2;
+    while (*p1 || *p2) {
+        char comp1[256] = {0};
+        char comp2[256] = {0};
+        int i = 0;
+        // Extract next component from path1 (up to '/' or end)
+        while (*p1 && *p1 != '/') {
+            comp1[i++] = *p1;
+            p1++;
+        }
+        comp1[i] = '\0';
+        if (*p1 == '/') p1++;  // Skip the '/' if present
+
+        i = 0;
+        // Extract next component from path2 (up to '/' or end)
+        while (*p2 && *p2 != '/') {
+            comp2[i++] = *p2;
+            p2++;
+        }
+        comp2[i] = '\0';
+        if (*p2 == '/') p2++;  // Skip the '/' if present
+
+        // Compare the two components; if they differ, return the comparison result.
+        int cmp = strcmp(comp1, comp2);
+        if (cmp != 0) {
+            return cmp;
+        }
+    }
+    return 0;
+}
 
 /**
- * @brief Comparison function used for sorting FileEntry items.
+ * @brief Comparator function for sorting FileEntry items in a hierarchical order.
  *
- * Compares based on parent directory names, then type (directory before file), then the full path.
+ * This function is designed to be used with the standard qsort() function to sort a flat array of
+ * FileEntry structures. It compares the `path` members of two FileEntry items using a hierarchical
+ * comparison (via compare_paths()). This ensures that parent directories are grouped immediately before
+ * their children in the final sorted order.
  *
- * @param a Pointer to the first FileEntry.
- * @param b Pointer to the second FileEntry.
- * @return int Negative if a < b, zero if equal, positive if a > b.
+ * @param a Pointer to the first FileEntry (as a void pointer).
+ * @param b Pointer to the second FileEntry (as a void pointer).
+ * @return int A negative value if the first entry should come before the second,
+ *             zero if they are considered equal,
+ *             or a positive value if the first entry should come after the second.
  */
 int compare_entries(const void *a, const void *b) {
     const FileEntry *fa = (const FileEntry *)a;
     const FileEntry *fb = (const FileEntry *)b;
-    
-    char *parent_a = strdup(fa->path);
-    char *parent_b = strdup(fb->path);
-    char *last_slash_a = strrchr(parent_a, '/');
-    char *last_slash_b = strrchr(parent_b, '/');
-    
-    if (last_slash_a) *last_slash_a = '\0';
-    if (last_slash_b) *last_slash_b = '\0';
-    
-    int parent_cmp = strcmp(parent_a ? parent_a : "", parent_b ? parent_b : "");
-    free(parent_a);
-    free(parent_b);
-    if (parent_cmp != 0) {
-        return parent_cmp;
-    }
-    
-    if (fa->is_dir != fb->is_dir) {
-        return (fb->is_dir - fa->is_dir);
-    }
-    
-    return strcmp(fa->path, fb->path);
+    return compare_paths(fa->path, fb->path);
 }
 
 /**
