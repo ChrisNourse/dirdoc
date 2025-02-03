@@ -4,6 +4,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <libgen.h>  // Add this line for basename declaration
 #ifdef _WIN32
 #include <windows.h>
 #endif
@@ -137,10 +138,32 @@ void create_file(const char *dir, const char *filename, const char *contents) {
 }
 
 /* Test the get_default_output function */
+#include <unistd.h>   // for getcwd()
+
 void test_get_default_output() {
+    // Test with an absolute path.
     const char *dummy_dir = "/some/path";
     char *output = get_default_output(dummy_dir);
-    assert(strcmp(output, "directory_documentation.md") == 0);
+    // The basename of "/some/path" is "path", so we expect "path_documentation.md"
+    assert(strcmp(output, "path_documentation.md") == 0);
+    free(output);
+
+    // Test with the current directory "."
+    char *cwd = getcwd(NULL, 0);
+    assert(cwd != NULL);
+    // Extract the actual folder name from the current working directory.
+    char *base = basename(cwd);
+    // Build the expected output: "<folder>_documentation.md"
+    size_t expected_len = strlen(base) + strlen("_documentation.md") + 1;
+    char *expected = malloc(expected_len);
+    snprintf(expected, expected_len, "%s_documentation.md", base);
+
+    output = get_default_output(".");
+    assert(strcmp(output, expected) == 0);
+    free(expected);
+    free(output);
+    free(cwd);
+
     printf("✔ test_get_default_output passed\n");
 }
 
@@ -286,13 +309,7 @@ void test_all_ignored_files() {
 /**
  * @brief Test for the new hierarchical compare_entries() function.
  *
- * This test creates several FileEntry objects with paths that test various edge cases:
- * - A parent directory ("src") should sort before any file or directory within it (e.g., "src/main.c").
- * - Two identical paths should compare equal.
- * - Directories with different names should be ordered alphabetically.
- * - Multiple components are compared component‐by‐component.
- *
- * The function uses assertions to ensure that compare_entries() returns the expected ordering.
+ * This test creates several FileEntry objects with paths that test various edge cases.
  */
 void test_compare_entries() {
     // Test that a parent directory comes before its child file.
@@ -447,6 +464,58 @@ void test_is_binary_file() {
     free(temp_dir);
 }
 
+/* Test the extra ignore pattern functionality with the -ngi option.
+ * This test creates a temporary directory with a .gitignore that would normally ignore file2.txt.
+ * With the -ngi flag, the .gitignore file is ignored, and an extra ignore pattern is provided
+ * to ignore file1.txt. The output should include file2.txt but not file1.txt.
+ */
+void test_ignore_extra_patterns_with_ngi() {
+    char *temp_dir = create_temp_dir();
+    // Create a .gitignore that ignores file2.txt (will be ignored because of -ngi)
+    create_file(temp_dir, ".gitignore", "file2.txt\n");
+    // Create two files.
+    create_file(temp_dir, "file1.txt", "Content of file 1");
+    create_file(temp_dir, "file2.txt", "Content of file 2");
+
+    char output_file[MAX_PATH_LEN];
+    snprintf(output_file, sizeof(output_file), "%s/%s", temp_dir, "test_ignore.md");
+
+    // Set the IGNORE_GITIGNORE flag (-ngi) so .gitignore is not used.
+    int flags = IGNORE_GITIGNORE;
+    // Provide an extra ignore pattern to ignore file1.txt.
+    char *extra_pattern = "file1.txt";
+    set_extra_ignore_patterns(&extra_pattern, 1);
+
+    int ret = document_directory(temp_dir, output_file, flags);
+    assert(ret == 0);
+
+    FILE *f = fopen(output_file, "r");
+    assert(f != NULL);
+    fseek(f, 0, SEEK_END);
+    long fsize = ftell(f);
+    fseek(f, 0, SEEK_SET);
+    char *content = malloc(fsize + 1);
+    fread(content, 1, fsize, f);
+    content[fsize] = '\0';
+    fclose(f);
+
+    // Ensure file1.txt is not mentioned, and file2.txt is mentioned.
+    assert(strstr(content, "file1.txt") == NULL);
+    assert(strstr(content, "file2.txt") != NULL);
+    free(content);
+
+    remove(output_file);
+#ifndef INSPECT_TEMP
+    if (remove_directory_recursive(temp_dir) == 0) {
+        printf("Folder '%s' removed successfully.\n", temp_dir);
+    } else {
+        printf("Failed to remove folder '%s'.\n", temp_dir);
+    }
+#endif
+    free(temp_dir);
+    printf("✔ test_ignore_extra_patterns_with_ngi passed\n");
+}
+
 /* Main test runner */
 int main(void) {
     printf("Running tests for dirdoc...\n");
@@ -459,6 +528,7 @@ int main(void) {
     test_scan_directory();
     test_stats();
     test_is_binary_file();
+    test_ignore_extra_patterns_with_ngi();
     printf("✅ All tests passed!\n");
 
     // Attempt to remove the local "tmp" folder if it is empty.

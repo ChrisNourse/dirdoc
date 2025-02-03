@@ -36,6 +36,12 @@ int finalize_output(const char *out_path, DocumentInfo *info);
  */
 void set_split_options(int enabled, double limit_mb);
 
+/* Sets extra ignore patterns to be applied during directory scanning.
+ * @param patterns: Array of pattern strings.
+ * @param count: Number of patterns.
+ */
+void set_extra_ignore_patterns(char **patterns, int count);
+
 /* Main documentation generation function.
  * Returns 0 on success, non-zero on failure.
  */

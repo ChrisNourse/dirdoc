@@ -1,3 +1,4 @@
+# Makefile
 SHELL = /bin/bash
 
 # Directories
@@ -8,18 +9,21 @@ TEST_DIR  = tests
 
 # Compiler and Flags
 CC = $(DEPS_DIR)/cosmocc/bin/cosmocc
-CFLAGS = -g -O2
+CFLAGS = -g -O2 -Ideps/cosmocc/include
 LDFLAGS = 
 
 # Cosmopolitan Libc 4.0.2 URLs
 COSMO_ZIP_URL = https://github.com/jart/cosmopolitan/releases/download/4.0.2/cosmocc-4.0.2.zip
 COSMO_ZIP     = cosmocc-4.0.2.zip
 
-# Dynamically collect all .c files from src
+# Source files
 SOURCES = $(wildcard $(SRC_DIR)/*.c)
+# Object files: compile each source file into an object file in $(BUILD_DIR)
+OBJECTS = $(patsubst $(SRC_DIR)/%.c, $(BUILD_DIR)/%.o, $(SOURCES))
 
-# Test source(s)
-TEST_SOURCES = $(wildcard $(TEST_DIR)/*.c)
+# Ensure dirdoc.o is linked last (it provides get_default_output)
+DIRDOC_OBJ = $(BUILD_DIR)/dirdoc.o
+OTHER_OBJS = $(filter-out $(DIRDOC_OBJ), $(OBJECTS))
 
 .PHONY: all clean super_clean deps help test build_temp clean_temp
 
@@ -55,20 +59,24 @@ $(DEPS_DIR)/$(COSMO_ZIP):
 $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
 
-$(BUILD_DIR)/dirdoc: $(SOURCES) | $(BUILD_DIR) deps
-	@echo "⏳ Building dirdoc..."
-	$(CC) $(CFLAGS) -I$(DEPS_DIR)/cosmocc/include -o $@ $^ $(LDFLAGS)
+# Compile each source file into an object file.
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.c | $(BUILD_DIR)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+# Link all object files together, ensuring dirdoc.o is last.
+$(BUILD_DIR)/dirdoc: $(OTHER_OBJS) $(DIRDOC_OBJ)
+	@echo "⏳ Linking dirdoc..."
+	$(CC) $(LDFLAGS) -o $@ $(OTHER_OBJS) $(DIRDOC_OBJ)
 	@echo "✅ Build complete"
 
-$(BUILD_DIR)/dirdoc_test: $(TEST_SOURCES) $(SOURCES) | $(BUILD_DIR) deps
+$(BUILD_DIR)/dirdoc_test: $(wildcard $(SRC_DIR)/*.c) $(wildcard $(TEST_DIR)/*.c) | $(BUILD_DIR) deps
 	@echo "⏳ Building tests..."
-	$(CC) $(CFLAGS) -DUNIT_TEST -I. -I$(SRC_DIR) -I$(TEST_DIR) -I$(DEPS_DIR)/cosmocc/include -o $@ $^ $(LDFLAGS)
+	$(CC) $(CFLAGS) -DUNIT_TEST -I. -I$(SRC_DIR) -I$(TEST_DIR) -Ideps/cosmocc/include -o $@ $^ $(LDFLAGS)
 	@echo "✅ Test build complete"
 
-# Updated target to build a test binary that does not clean up temp files (for manual inspection)
-$(BUILD_DIR)/temp_test: $(TEST_SOURCES) $(SOURCES) | $(BUILD_DIR) deps
+$(BUILD_DIR)/temp_test: $(wildcard $(SRC_DIR)/*.c) $(wildcard $(TEST_DIR)/*.c) | $(BUILD_DIR) deps
 	@echo "⏳ Building temp test binary..."
-	$(CC) $(CFLAGS) -DUNIT_TEST -DINSPECT_TEMP -I. -I$(SRC_DIR) -I$(TEST_DIR) -I$(DEPS_DIR)/cosmocc/include -o $@ $^ $(LDFLAGS)
+	$(CC) $(CFLAGS) -DUNIT_TEST -DINSPECT_TEMP -I. -I$(SRC_DIR) -I$(TEST_DIR) -Ideps/cosmocc/include -o $@ $^ $(LDFLAGS)
 	@echo "✅ Temp test build complete"
 
 build_temp: deps $(BUILD_DIR)/temp_test
@@ -103,3 +111,4 @@ help:
 	@echo "  build_temp  - Build the test binary for generating temp test files (without auto-cleanup)"
 	@echo "  clean_temp  - Remove all temporary test files from the 'tmp' directory"
 	@echo "  help        - Show this help message"
+	

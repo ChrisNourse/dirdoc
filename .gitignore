@@ -3,5 +3,5 @@ build/*
 .vscode/*
 .git/*
 secrets/*
-directory_documentation*
+*_documentation.md
 tmp/*

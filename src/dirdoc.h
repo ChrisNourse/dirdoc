@@ -33,7 +33,9 @@ typedef struct {
  */
 int document_directory(const char *input_dir, const char *output_file, int flags);
 
-/* Returns a default output filename based on the input directory. */
+/* Returns a default output filename based on the input directory.
+ * The returned string is dynamically allocated and must be freed by the caller.
+ */
 char *get_default_output(const char *input_dir);
 
 #ifdef __cplusplus

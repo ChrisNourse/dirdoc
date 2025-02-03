@@ -12,12 +12,16 @@
 #include "gitignore.h"
 #include "dirdoc.h"
 
-// Static variables for split output options
+// Declare static variables for split output options.
 static int split_enabled = 0;
 static size_t split_limit_bytes = 18 * 1024 * 1024; // default 18 MB
 
+// Global variables to hold extra ignore patterns from the command line.
+static char **g_extra_ignore_patterns = NULL;
+static int g_extra_ignore_count = 0;
+
 /**
- * @brief Sets the options for splitting the output into multiple files.
+ * @brief Sets the split options for splitting the output into multiple files.
  *
  * @param enabled Non-zero to enable splitting.
  * @param limit_mb Maximum size per file in megabytes.
@@ -25,6 +29,64 @@ static size_t split_limit_bytes = 18 * 1024 * 1024; // default 18 MB
 void set_split_options(int enabled, double limit_mb) {
     split_enabled = enabled;
     split_limit_bytes = (size_t)(limit_mb * 1024 * 1024);
+}
+
+/**
+ * @brief Sets extra ignore patterns to be applied during directory scanning.
+ *
+ * @param patterns Array of pattern strings.
+ * @param count Number of patterns.
+ */
+void set_extra_ignore_patterns(char **patterns, int count) {
+    g_extra_ignore_patterns = patterns;
+    g_extra_ignore_count = count;
+}
+
+/**
+ * @brief Adds extra ignore patterns to the provided GitignoreList.
+ *
+ * For each extra pattern, parses negation, anchoring, and directory-only markers,
+ * then appends it to the GitignoreList.
+ *
+ * @param gitignore Pointer to the GitignoreList.
+ * @param patterns Array of extra ignore pattern strings.
+ * @param count Number of extra patterns.
+ */
+static void add_extra_ignore_patterns(GitignoreList *gitignore, char **patterns, int count) {
+    for (int i = 0; i < count; i++) {
+        char *pattern = strdup(patterns[i]);
+        bool neg = false, anc = false, dir_only = false;
+        if (pattern[0] == '!') {
+            neg = true;
+            memmove(pattern, pattern + 1, strlen(pattern));
+        }
+        if (pattern[0] == '/') {
+            anc = true;
+            memmove(pattern, pattern + 1, strlen(pattern));
+        }
+        size_t len = strlen(pattern);
+        if (len > 0 && pattern[len - 1] == '/') {
+            dir_only = true;
+            pattern[len - 1] = '\0';
+        }
+        size_t new_count = gitignore->count;
+        if (new_count == 0) {
+            gitignore->patterns = malloc(sizeof(char*) * (new_count + 1));
+            gitignore->negation = malloc(sizeof(bool) * (new_count + 1));
+            gitignore->anchored = malloc(sizeof(bool) * (new_count + 1));
+            gitignore->dir_only = malloc(sizeof(bool) * (new_count + 1));
+        } else {
+            gitignore->patterns = realloc(gitignore->patterns, sizeof(char*) * (new_count + 1));
+            gitignore->negation = realloc(gitignore->negation, sizeof(bool) * (new_count + 1));
+            gitignore->anchored = realloc(gitignore->anchored, sizeof(bool) * (new_count + 1));
+            gitignore->dir_only = realloc(gitignore->dir_only, sizeof(bool) * (new_count + 1));
+        }
+        gitignore->patterns[new_count] = pattern;
+        gitignore->negation[new_count] = neg;
+        gitignore->anchored[new_count] = anc;
+        gitignore->dir_only[new_count] = dir_only;
+        gitignore->count++;
+    }
 }
 
 /**
@@ -344,19 +406,23 @@ int document_directory(const char *input_dir, const char *output_file, int flags
     if (!(flags & IGNORE_GITIGNORE)) {
         load_gitignore(input_dir, &gitignore);
     }
+    if (g_extra_ignore_count > 0) {
+        add_extra_ignore_patterns(&gitignore, g_extra_ignore_patterns, g_extra_ignore_count);
+    }
     
+    // Use the provided output_file if available; otherwise, get the default (dynamically allocated)
     char *out_path = output_file ? (char *)output_file : get_default_output(input_dir);
     
     fprintf(stderr, "⏳ Scanning directory '%s'...\n", input_dir);
     FileList files;
     init_file_list(&files);
     
-    bool success = scan_directory(input_dir, NULL, &files, 0, (!(flags & IGNORE_GITIGNORE)) ? &gitignore : NULL, flags);
+    bool success = scan_directory(input_dir, NULL, &files, 0, &gitignore, flags);
     /* 
      * If scanning did not add any files but the directory itself is non-empty,
      * warn the user that all files have been ignored.
-     */
-    if (!success) {
+     */    
+     if (!success) {
         DIR *d = opendir(input_dir);
         int file_count = 0;
         if (d) {
@@ -369,7 +435,7 @@ int document_directory(const char *input_dir, const char *output_file, int flags
         }
         if (file_count > 0) {
             fprintf(stderr, "Warning: All files in directory '%s' were ignored by .gitignore.\n", input_dir);
-            /* Continue with an empty file list */
+/* Continue with an empty file list */
         } else {
             fprintf(stderr, "Error: No files or folders found in directory '%s'\n", input_dir);
             free_file_list(&files);
@@ -436,5 +502,8 @@ int document_directory(const char *input_dir, const char *output_file, int flags
     }
     
     print_terminal_stats(out_path, &info);
+    if (!output_file) {
+        free(out_path);
+    }
     return 0;
 }
