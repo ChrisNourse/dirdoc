@@ -187,5 +187,6 @@ This project is licensed under the MIT License. See the LICENSE file for details
 - Built with [Cosmopolitan Libc](https://github.com/jart/cosmopolitan).  
 - For more information on Cosmo projects, visit:
   - [Cosmopolitan Documentation](https://github.com/jart/cosmopolitan/blob/master/docs/README.md)
-
+- The code is human guided written by AI. Thanks Claude and chatGPT!
+- The logo is human generated. Thanks Whit!
 ---
