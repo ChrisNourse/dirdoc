@@ -1,0 +1,61 @@
+name: Build and Release dirdoc
+
+on:
+  push:
+    tags:
+      - '*.*.*'
+
+jobs:
+  build_linux:
+    name: Build on Linux
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential make curl unzip
+
+      - name: Build dirdoc
+        run: make all
+        shell: bash
+
+      - name: Upload binary artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: dirdoc-binary
+          path: build/dirdoc
+
+  release:
+    name: Create Release and Upload Artifact
+    needs: build_linux
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Download binary artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: dirdoc-binary
+          path: .
+
+      - name: Create GitHub Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.ref }}
+          name: ${{ github.ref }}
+          body: |
+            Automated release of dirdoc binary.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Release Asset
+        uses: softprops/action-gh-release@v1
+        with:
+          files: dirdoc
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

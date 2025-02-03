@@ -17,31 +17,47 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Setup dependencies on Linux
+      - name: Install dependencies on Linux
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential make curl unzip
 
-      - name: Setup dependencies on macOS
+      - name: Install dependencies on macOS
         if: runner.os == 'macOS'
         run: |
           brew update
           brew install make curl unzip
 
-      - name: Setup dependencies on Windows
+      - name: Install dependencies on Windows
         if: runner.os == 'Windows'
         run: |
           choco install make -y
           choco install curl -y
           choco install unzip -y
 
-      - name: Build dirdoc
+      - name: Build dirdoc on Linux/macOS
+        if: runner.os != 'Windows'
         run: make all
         shell: bash
 
-      - name: Run tests
+      - name: Build dirdoc on Windows
+        if: runner.os == 'Windows'
+        run: |
+          export MSYS_NO_PATHCONV=1
+          make all
+        shell: bash
+
+      - name: Run tests on Linux/macOS
+        if: runner.os != 'Windows'
         run: make test
+        shell: bash
+
+      - name: Run tests on Windows
+        if: runner.os == 'Windows'
+        run: |
+          export MSYS_NO_PATHCONV=1
+          make test
         shell: bash
 
       - name: Clean up build artifacts
