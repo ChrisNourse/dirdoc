@@ -24,13 +24,14 @@ Pre-built binaries for dirdoc are available in the [GitHub Releases](https://git
   ```
 
 - **Windows:**  
-  Rename the downloaded binary by appending `.exe` (e.g., `dirdoc` → `dirdoc.exe`).
+ Obtain the binary from GitHub Releases, you may need to rename it by appending `.exe` (e.g., `dirdoc` → `dirdoc.exe`) for proper execution.
 
 Once prepared, you can run the binary directly:
 ```bash
 dirdoc --help
 ```
 
+- **Windows:**  
 ```powershell
 dirdoc.exe --help
 ```
@@ -100,7 +101,8 @@ dirdoc --help
 
 - **Enable split output with a custom size limit:**
   ```bash
-  dirdoc --split --limit 10 /path/to/dir
+  dirdoc -sp /path/to/dir
+  dirdoc -sp -l 10 /path/to/dir
   ```
 
 - **Include .git folders in the documentation:**

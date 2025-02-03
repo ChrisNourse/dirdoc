@@ -8,8 +8,11 @@ This document provides instructions on how to build, test, and maintain the dird
 
 Before building the project, ensure that your environment has the following:
 
-- **Operating System:** Linux, macOS, or Windows  
-  *(For Windows, it is recommended to use Windows Subsystem for Linux (WSL) then follow the linux instructions.)*
+- **Operating System:**  
+  - **Linux/macOS:** Follow the instructions below.
+  - **Windows:** **Building directly on Windows is very challenging.**  
+    **It is strongly recommended to install [Windows Subsystem for Linux (WSL)](https://docs.microsoft.com/en-us/windows/wsl/install) and follow the Linux build instructions.**  
+    *(Note: The pre-built universal binary runs on Windows; only the build process is problematic on native Windows.)*
 
 - **Tools:**
   - **make:**  
@@ -30,11 +33,8 @@ Before building the project, ensure that your environment has the following:
       ```bash
       brew install make
       ```
-    - **Windows:**  
-      - Using [Chocolatey](https://chocolatey.org/), run in an administrative PowerShell:  
-        ```powershell
-        choco install make
-        ```
+    - **Windows (via WSL):**  
+      Follow the Linux instructions inside your WSL environment.
 
   - **C Compiler:**  
     The project uses `$(DEPS_DIR)/cosmocc/bin/cosmocc` from Cosmopolitan Libc, which is automatically set up by the Makefile.
@@ -50,11 +50,8 @@ Before building the project, ensure that your environment has the following:
       ```bash
       brew install curl
       ```
-    - **Windows:**  
-      Install using Chocolatey:  
-      ```powershell
-      choco install curl
-      ```
+    - **Windows (via WSL):**  
+      Use the Linux instructions.
 
   - **unzip:**  
     - **Linux:**  
@@ -67,11 +64,8 @@ Before building the project, ensure that your environment has the following:
       ```bash
       brew install unzip
       ```
-    - **Windows:**  
-      Using Chocolatey:  
-      ```powershell
-      choco install unzip
-      ```
+    - **Windows (via WSL):**  
+      Use the Linux instructions.
 
   - **Git (optional, for cloning the repository):**  
     - **Linux:**  
@@ -84,11 +78,8 @@ Before building the project, ensure that your environment has the following:
       ```bash
       brew install git
       ```
-    - **Windows:**  
-      Using Chocolatey:  
-      ```powershell
-      choco install git
-      ```
+    - **Windows (via WSL):**  
+      Use the Linux instructions.
 
 > **Note:** The Makefile automatically downloads and sets up the Cosmopolitan dependency into the `deps` folder.
 
@@ -221,9 +212,3 @@ make help
     ```
 
 ---
-
-## Summary
-
-This `BUILDING.md` provides a quick reference for setting up your development environment, building the dirdoc application, running tests, and cleaning up artifacts. For further details on usage and features, please refer to the [README.md](README.md).
-
-Happy building!
