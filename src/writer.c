@@ -46,7 +46,7 @@ void set_extra_ignore_patterns(char **patterns, int count) {
  * @brief Adds extra ignore patterns to the provided GitignoreList.
  *
  * For each extra pattern, parses negation, anchoring, and directory-only markers,
- * then appends it to the GitignoreList.
+ * then appends it as a GitignoreRule to the GitignoreList.
  *
  * @param gitignore Pointer to the GitignoreList.
  * @param patterns Array of extra ignore pattern strings.
@@ -71,20 +71,14 @@ static void add_extra_ignore_patterns(GitignoreList *gitignore, char **patterns,
         }
         size_t new_count = gitignore->count;
         if (new_count == 0) {
-            gitignore->patterns = malloc(sizeof(char*) * (new_count + 1));
-            gitignore->negation = malloc(sizeof(bool) * (new_count + 1));
-            gitignore->anchored = malloc(sizeof(bool) * (new_count + 1));
-            gitignore->dir_only = malloc(sizeof(bool) * (new_count + 1));
+            gitignore->rules = malloc(sizeof(GitignoreRule) * (new_count + 1));
         } else {
-            gitignore->patterns = realloc(gitignore->patterns, sizeof(char*) * (new_count + 1));
-            gitignore->negation = realloc(gitignore->negation, sizeof(bool) * (new_count + 1));
-            gitignore->anchored = realloc(gitignore->anchored, sizeof(bool) * (new_count + 1));
-            gitignore->dir_only = realloc(gitignore->dir_only, sizeof(bool) * (new_count + 1));
+            gitignore->rules = realloc(gitignore->rules, sizeof(GitignoreRule) * (new_count + 1));
         }
-        gitignore->patterns[new_count] = pattern;
-        gitignore->negation[new_count] = neg;
-        gitignore->anchored[new_count] = anc;
-        gitignore->dir_only[new_count] = dir_only;
+        gitignore->rules[new_count].pattern = pattern;
+        gitignore->rules[new_count].negation = neg;
+        gitignore->rules[new_count].anchored = anc;
+        gitignore->rules[new_count].dir_only = dir_only;
         gitignore->count++;
     }
 }
@@ -360,9 +354,9 @@ int finalize_output(const char *out_path, DocumentInfo *info) {
             char *dot = strrchr((char *)out_path, '.');
             if (dot) {
                 size_t basename_len = dot - out_path;
-                snprintf(part_filename, sizeof(part_filename), "%.*s_part%zu%s", (int)basename_len, out_path, i+1, dot);
+                snprintf(part_filename, sizeof(part_filename), "%.*s_part%zu%s", (int)basename_len, out_path, i + 1, dot);
             } else {
-                snprintf(part_filename, sizeof(part_filename), "%s_part%zu", out_path, i+1);
+                snprintf(part_filename, sizeof(part_filename), "%s_part%zu", out_path, i + 1);
             }
             
             FILE *part_file = fopen(part_filename, "w");
@@ -422,7 +416,7 @@ int document_directory(const char *input_dir, const char *output_file, int flags
      * If scanning did not add any files but the directory itself is non-empty,
      * warn the user that all files have been ignored.
      */    
-     if (!success) {
+    if (!success) {
         DIR *d = opendir(input_dir);
         int file_count = 0;
         if (d) {
