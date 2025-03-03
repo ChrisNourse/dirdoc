@@ -33,6 +33,7 @@ jobs:
       - name: Create GitHub Release
         id: create_release
         uses: softprops/action-gh-release@v1
+        if: github.event_name != 'pull_request'
         with:
           tag_name: ${{ github.ref }}
           name: ${{ github.ref }}
@@ -43,3 +44,10 @@ jobs:
             dirdoc.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Skip GitHub Release (Local Testing)
+        if: env.ACT == 'true'
+        run: |
+          echo "Skipping GitHub Release step when running locally with act"
+          echo "The binaries have been created successfully:"
+          ls -la dirdoc*
