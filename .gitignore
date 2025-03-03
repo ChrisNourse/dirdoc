@@ -5,3 +5,4 @@ build/*
 secrets/*
 *_documentation.md
 tmp/*
+.aider*
