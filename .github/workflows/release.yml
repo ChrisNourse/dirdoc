@@ -30,10 +30,27 @@ jobs:
           # Verify files exist and have proper permissions
           ls -la dirdoc*
 
+      - name: Check if running in Act
+        id: check_act
+        run: |
+          if [ -n "$ACT" ] || [ -n "$GITHUB_ACTIONS_ACT" ]; then
+            echo "Running in Act environment"
+            echo "::set-output name=is_act::true"
+          else
+            echo "::set-output name=is_act::false"
+          fi
+
+      - name: Skip GitHub Release (Local Testing)
+        if: steps.check_act.outputs.is_act == 'true'
+        run: |
+          echo "Skipping GitHub Release step when running locally with act"
+          echo "The binaries have been created successfully:"
+          ls -la dirdoc*
+          
       - name: Create GitHub Release
         id: create_release
+        if: steps.check_act.outputs.is_act != 'true' && github.event_name != 'pull_request'
         uses: softprops/action-gh-release@v1
-        if: github.event_name != 'pull_request'
         with:
           tag_name: ${{ github.ref }}
           name: ${{ github.ref }}
@@ -44,10 +61,3 @@ jobs:
             dirdoc.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          
-      - name: Skip GitHub Release (Local Testing)
-        if: env.ACT == 'true'
-        run: |
-          echo "Skipping GitHub Release step when running locally with act"
-          echo "The binaries have been created successfully:"
-          ls -la dirdoc*
