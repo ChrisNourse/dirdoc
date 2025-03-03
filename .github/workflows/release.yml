@@ -53,9 +53,16 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Upload Release Asset
+      - name: Create Windows executable copy
+        run: |
+          chmod +x dirdoc
+          cp dirdoc dirdoc.exe
+
+      - name: Upload Release Assets
         uses: softprops/action-gh-release@v1
         with:
-          files: dirdoc
+          files: |
+            dirdoc
+            dirdoc.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
