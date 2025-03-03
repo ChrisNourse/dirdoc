@@ -6,8 +6,8 @@ on:
       - '*.*.*'
 
 jobs:
-  build_linux:
-    name: Build on Linux
+  release:
+    name: Build and Release
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -22,20 +22,13 @@ jobs:
         run: make all
         shell: bash
 
-      - name: Copy binary to root directory
+      - name: Create Windows executable copy
         run: |
           cp build/dirdoc ./dirdoc
           chmod +x ./dirdoc
-
-  release:
-    name: Create Release and Upload Artifact
-    needs: build_linux
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-
-      # No need to download artifact as we'll use the binary from the build step
+          cp dirdoc dirdoc.exe
+          # Verify files exist and have proper permissions
+          ls -la dirdoc*
 
       - name: Create GitHub Release
         id: create_release
@@ -45,17 +38,6 @@ jobs:
           name: ${{ github.ref }}
           body: |
             Automated release of dirdoc binary.
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Create Windows executable copy
-        run: |
-          chmod +x dirdoc
-          cp dirdoc dirdoc.exe
-
-      - name: Upload Release Assets
-        uses: softprops/action-gh-release@v1
-        with:
           files: |
             dirdoc
             dirdoc.exe
