@@ -42,6 +42,15 @@ void set_split_options(int enabled, double limit_mb);
  */
 void set_extra_ignore_patterns(char **patterns, int count);
 
+/**
+ * @brief Frees memory allocated for extra ignore patterns.
+ *
+ * This function releases all memory allocated for the global extra ignore patterns
+ * that were set using set_extra_ignore_patterns(). It should be called when
+ * these patterns are no longer needed to prevent memory leaks.
+ */
+ void free_extra_ignore_patterns();
+
 /* Main documentation generation function.
  * Returns 0 on success, non-zero on failure.
  */

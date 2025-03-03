@@ -138,7 +138,12 @@ int main(int argc, char *argv[]) {
     }
 
     // Call document_directory from the writer module.
-    return document_directory(input_dir, output_file, flags);
+    int result = document_directory(input_dir, output_file, flags);
+
+    // Now free the patterns after document_directory is done with them
+    free_extra_ignore_patterns();
+
+    return result;
 }
 #endif  /* UNIT_TEST */
 

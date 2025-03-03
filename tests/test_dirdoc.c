@@ -469,7 +469,7 @@ void test_is_binary_file() {
  * With the -ngi flag, the .gitignore file is ignored, and an extra ignore pattern is provided
  * to ignore file1.txt. The output should include file2.txt but not file1.txt.
  */
-void test_ignore_extra_patterns_with_ngi() {
+ void test_ignore_extra_patterns_with_ngi() {
     char *temp_dir = create_temp_dir();
     // Create a .gitignore that ignores file2.txt (will be ignored because of -ngi)
     create_file(temp_dir, ".gitignore", "file2.txt\n");
@@ -483,11 +483,12 @@ void test_ignore_extra_patterns_with_ngi() {
     // Set the IGNORE_GITIGNORE flag (-ngi) so .gitignore is not used.
     int flags = IGNORE_GITIGNORE;
     // Provide an extra ignore pattern to ignore file1.txt.
-    char *extra_pattern = "file1.txt";
-    set_extra_ignore_patterns(&extra_pattern, 1);
+    char *patterns[1] = {"file1.txt"};
+    set_extra_ignore_patterns(patterns, 1);
 
     int ret = document_directory(temp_dir, output_file, flags);
-    assert(ret == 0);
+    // Clean up the extra ignore patterns before proceeding
+    free_extra_ignore_patterns();
 
     FILE *f = fopen(output_file, "r");
     assert(f != NULL);

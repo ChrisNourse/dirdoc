@@ -29,10 +29,11 @@ static char *escape_regex(const char *str) {
 //   - "**" with ".*" (matching across directories)
 //   - "*"  with "[^/]*" (matching within a single directory)
 //   - "?"  with "." (any single character)
-static char *translate_gitignore_pattern(const char *pattern) {
+// Change the function signature to accept dir_only flag
+static char *translate_gitignore_pattern(const char *pattern, bool dir_only) {
     size_t len = strlen(pattern);
     // Allocate a buffer that is large enough for worst-case expansion.
-    char *regex_pattern = malloc(4 * len + 10);
+    char *regex_pattern = malloc(4 * len + 16); // Added extra space for directory pattern
     if (!regex_pattern) return NULL;
     char *dest = regex_pattern;
     
@@ -73,14 +74,20 @@ static char *translate_gitignore_pattern(const char *pattern) {
         }
     }
     
-    // Ensure the regex matches the end of the string.
-    *dest++ = '$';
-    *dest = '\0';
+    // For directory patterns, append a pattern that matches paths inside the directory
+    if (dir_only) {
+        strcpy(dest, "(/.*)?$");
+        dest += strlen("(/.*)?$");
+    } else {
+        // Regular end of pattern marker
+        *dest++ = '$';
+        *dest = '\0';
+    }
     
     return regex_pattern;
 }
 
-// Parses a single line from the .gitignore file and adds a compiled rule to the GitignoreList.
+// Update the parse_gitignore_line function to pass dir_only to translate_gitignore_pattern
 static int parse_gitignore_line(const char *line, GitignoreList *list) {
     // Skip leading whitespace.
     while (*line && isspace((unsigned char)*line)) line++;
@@ -110,7 +117,8 @@ static int parse_gitignore_line(const char *line, GitignoreList *list) {
         pattern[l - 1] = '\0'; // remove trailing '/'
     }
     
-    char *regex_str = translate_gitignore_pattern(pattern);
+    // Pass dir_only to translate_gitignore_pattern
+    char *regex_str = translate_gitignore_pattern(pattern, dir_only);
     if (!regex_str) {
         free(pattern);
         return -1;
@@ -174,20 +182,9 @@ void load_gitignore(const char *dir_path, GitignoreList *gitignore) {
 bool match_gitignore(const char *path, const GitignoreList *gitignore) {
     if (!gitignore || gitignore->count == 0) return false;
     
-    // Determine whether the path is a directory.
-    struct stat st;
-    bool is_dir = false;
-    if (stat(path, &st) == 0 && S_ISDIR(st.st_mode)) {
-        is_dir = true;
-    }
-    
     bool ignored = false;
     for (size_t i = 0; i < gitignore->count; i++) {
         const GitignoreRule *rule = &gitignore->rules[i];
-        // Skip directory-only rules for non-directory paths.
-        if (rule->dir_only && !is_dir) {
-            continue;
-        }
         int ret = regexec(&rule->regex, path, 0, NULL, 0);
         if (ret == 0) {
             // If the rule matches, update the ignored state based on whether it is a negation.
