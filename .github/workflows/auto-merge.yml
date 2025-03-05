@@ -7,7 +7,7 @@ on:
 jobs:
   auto-merge:
     runs-on: ubuntu-latest
-    if: github.event.review.state == 'approved' && github.event.pull_request.user.login == github.repository_owner
+    if: github.event.review.state == 'approved' && github.event.pull_request.user.login != github.repository_owner
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -23,7 +23,7 @@ jobs:
           
       - name: Auto-merge PR
         run: |
-          echo "Auto-merging approved PR from repository owner..."
+          echo "Auto-merging approved PR from contributor..."
           echo "$GH_PAT" | gh auth login --with-token
           gh pr merge ${{ github.event.pull_request.number }} --merge -R ${{ github.repository }}
           echo "PR merged successfully!"
