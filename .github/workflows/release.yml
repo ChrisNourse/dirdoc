@@ -64,10 +64,15 @@ jobs:
           # Extract version from tag (e.g., refs/tags/v1.0.0 -> v1.0.0 or refs/tags/1.0.0 -> 1.0.0)
           VERSION=${GITHUB_REF#refs/tags/}
           
+          # Configure GitHub CLI with token
+          echo "$GITHUB_TOKEN" | gh auth login --with-token
+          
           # Create release with GitHub CLI
           gh release create "$VERSION" \
+            --repo "$GITHUB_REPOSITORY" \
             --title "Release $VERSION" \
             --notes "Automated release of dirdoc binary." \
             ./dirdoc ./dirdoc.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
