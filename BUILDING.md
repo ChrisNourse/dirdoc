@@ -10,7 +10,7 @@ Before building the project, ensure that your environment has the following:
 
 - **Operating System:**  
   - **Linux/macOS:** Follow the instructions below.
-  - **Windows:** **Building directly on Windows is very challenging.**  
+  - **Windows:** **Building directly on Windows is a pain.**  
     **It is strongly recommended to install [Windows Subsystem for Linux (WSL)](https://docs.microsoft.com/en-us/windows/wsl/install) and follow the Linux build instructions.**  
     *(Note: The pre-built universal binary runs on Windows; only the build process is problematic on native Windows.)*
 
