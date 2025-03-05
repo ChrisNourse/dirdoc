@@ -2,7 +2,7 @@ name: CI Build and Test
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, 'feature/**', 'bugfix/**', 'release/**' ]
   pull_request:
     branches: [ main ]
 
@@ -31,12 +31,19 @@ jobs:
 
       - name: Build dirdoc on Linux/macOS
         if: runner.os != 'Windows'
-        run: make all
+        run: |
+          echo "Building dirdoc..."
+          make all
+          echo "Build completed successfully!"
+          ls -la build/
         shell: bash
 
       - name: Run tests on Linux/macOS
         if: runner.os != 'Windows'
-        run: make test
+        run: |
+          echo "Running tests..."
+          make test
+          echo "Tests completed successfully!"
         shell: bash
 
       - name: Clean up build artifacts
