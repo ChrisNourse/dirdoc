@@ -47,17 +47,27 @@ jobs:
           echo "The binaries have been created successfully:"
           ls -la dirdoc*
           
+      - name: Install GitHub CLI
+        if: steps.check_act.outputs.is_act != 'true' && github.event_name != 'pull_request'
+        run: |
+          type -p curl >/dev/null || sudo apt install curl -y
+          curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \
+          && sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg \
+          && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
+          && sudo apt update \
+          && sudo apt install gh -y
+
       - name: Create GitHub Release
         id: create_release
         if: steps.check_act.outputs.is_act != 'true' && github.event_name != 'pull_request'
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: ${{ github.ref }}
-          name: ${{ github.ref }}
-          body: |
-            Automated release of dirdoc binary.
-          files: |
-            dirdoc
-            dirdoc.exe
+        run: |
+          # Extract version from tag (e.g., refs/tags/v1.0.0 -> v1.0.0 or refs/tags/1.0.0 -> 1.0.0)
+          VERSION=${GITHUB_REF#refs/tags/}
+          
+          # Create release with GitHub CLI
+          gh release create "$VERSION" \
+            --title "Release $VERSION" \
+            --notes "Automated release of dirdoc binary." \
+            ./dirdoc ./dirdoc.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
