@@ -63,15 +63,24 @@ jobs:
         run: |
           # Extract version from tag (e.g., refs/tags/v1.0.0 -> v1.0.0 or refs/tags/1.0.0 -> 1.0.0)
           VERSION=${GITHUB_REF#refs/tags/}
+          echo "Creating release for version: $VERSION"
           
           # Configure GitHub CLI with token
+          echo "Authenticating with GitHub CLI..."
           echo "$GH_PAT" | gh auth login --with-token
           
+          # Verify authentication
+          echo "Verifying GitHub authentication..."
+          gh auth status || { echo "GitHub authentication failed"; exit 1; }
+          
           # Create release with GitHub CLI
+          echo "Creating GitHub release..."
           gh release create "$VERSION" \
             --repo "$GITHUB_REPOSITORY" \
             --title "Release $VERSION" \
             --notes "Automated release of dirdoc binary." \
             ./dirdoc ./dirdoc.exe
+          
+          echo "Release created successfully!"
         env:
           GH_PAT: ${{ secrets.GH_PAT }}
