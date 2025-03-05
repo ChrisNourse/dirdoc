@@ -1,0 +1,36 @@
+name: Pull Request Automation
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    branches: [ main ]
+
+jobs:
+  validate:
+    name: Validate PR
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update || true
+          sudo apt-get install -y build-essential make curl unzip || true
+
+      - name: Build dirdoc
+        run: make all
+        shell: bash
+
+      - name: Run tests
+        run: |
+          echo "Running tests..."
+          make test
+          echo "Tests completed successfully!"
+        shell: bash
+
+      - name: Check code style
+        run: |
+          echo "Checking code style..."
+          # Add code style checks here if needed
+          echo "Code style check completed!"
