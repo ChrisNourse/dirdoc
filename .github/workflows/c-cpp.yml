@@ -15,7 +15,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: ./.github/actions/checkout
 
       - name: Install dependencies on Linux
         if: runner.os == 'Linux'

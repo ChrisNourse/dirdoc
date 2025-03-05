@@ -1,0 +1,23 @@
+name: 'Checkout'
+description: 'Checkout repository code'
+runs:
+  using: 'composite'
+  steps:
+    - shell: bash
+      run: |
+        # Simple git clone implementation
+        if [ -z "$GITHUB_WORKSPACE" ]; then
+          echo "Error: GITHUB_WORKSPACE environment variable is not set"
+          exit 1
+        fi
+        
+        # Clone the repository
+        git clone https://github.com/$GITHUB_REPOSITORY.git $GITHUB_WORKSPACE
+        cd $GITHUB_WORKSPACE
+        
+        # Checkout the specific ref if provided
+        if [ -n "$GITHUB_REF" ]; then
+          git checkout $GITHUB_REF || git checkout $GITHUB_SHA
+        fi
+        
+        echo "Repository checked out successfully"
