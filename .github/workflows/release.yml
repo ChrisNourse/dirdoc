@@ -11,12 +11,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Install dependencies
         run: |
-          apt-get update || true
-          apt-get install -y build-essential make curl unzip || true
+          sudo apt-get update || true
+          sudo apt-get install -y build-essential make curl unzip || true
 
       - name: Build dirdoc
         run: make all
@@ -50,14 +50,40 @@ jobs:
       - name: Create GitHub Release
         id: create_release
         if: steps.check_act.outputs.is_act != 'true' && github.event_name != 'pull_request'
-        uses: softprops/action-gh-release@v1
+        uses: actions/github-script@v7
         with:
-          tag_name: ${{ github.ref }}
-          name: ${{ github.ref }}
-          body: |
-            Automated release of dirdoc binary.
-          files: |
-            dirdoc
-            dirdoc.exe
+          script: |
+            const fs = require('fs');
+            
+            // Get tag name from ref (refs/tags/v1.0.0 -> v1.0.0)
+            const tagName = context.ref.replace('refs/tags/', '');
+            
+            // Create a release
+            const release = await github.rest.repos.createRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag_name: tagName,
+              name: tagName,
+              body: 'Automated release of dirdoc binary.',
+              draft: false,
+              prerelease: false
+            });
+            
+            // Upload assets
+            const assets = ['dirdoc', 'dirdoc.exe'];
+            for (const asset of assets) {
+              if (fs.existsSync(asset)) {
+                await github.rest.repos.uploadReleaseAsset({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  release_id: release.data.id,
+                  name: asset,
+                   fs.readFileSync(asset)
+                });
+                console.log(`Uploaded ${asset} to release ${tagName}`);
+              } else {
+                console.log(`Warning: Asset ${asset} not found`);
+              }
+            }
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
