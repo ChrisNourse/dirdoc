@@ -10,6 +10,10 @@ jobs:
     name: Build and Release
     runs-on: ubuntu-latest
     steps:
+      # We need to checkout first to get our local actions
+      - name: Initial checkout
+        uses: actions/checkout@v4
+        
       - name: Checkout code
         uses: ./.github/actions/checkout
 

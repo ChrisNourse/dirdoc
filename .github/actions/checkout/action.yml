@@ -5,19 +5,24 @@ runs:
   steps:
     - shell: bash
       run: |
-        # Simple git clone implementation
-        if [ -z "$GITHUB_WORKSPACE" ]; then
-          echo "Error: GITHUB_WORKSPACE environment variable is not set"
-          exit 1
-        fi
+        # We're already in the workspace in GitHub Actions
+        # Just need to make sure we have the right code
         
-        # Clone the repository
-        git clone https://github.com/$GITHUB_REPOSITORY.git $GITHUB_WORKSPACE
-        cd $GITHUB_WORKSPACE
+        echo "Current directory: $(pwd)"
+        echo "Repository: $GITHUB_REPOSITORY"
+        echo "Ref: $GITHUB_REF"
+        echo "SHA: $GITHUB_SHA"
+        
+        # Configure git
+        git config --global user.name "GitHub Actions"
+        git config --global user.email "actions@github.com"
+        
+        # Fetch all history and tags
+        git fetch --prune --unshallow || git fetch --prune
         
         # Checkout the specific ref if provided
         if [ -n "$GITHUB_REF" ]; then
-          git checkout $GITHUB_REF || git checkout $GITHUB_SHA
+          git checkout $GITHUB_REF || git checkout $GITHUB_SHA || true
         fi
         
         echo "Repository checked out successfully"
