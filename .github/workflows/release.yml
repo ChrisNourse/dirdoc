@@ -10,12 +10,8 @@ jobs:
     name: Build and Release
     runs-on: ubuntu-latest
     steps:
-      # We need to checkout first to get our local actions
-      - name: Initial checkout
-        uses: actions/checkout@v4
-        
       - name: Checkout code
-        uses: ./.github/actions/checkout
+        uses: actions/checkout@v4
 
       - name: Install dependencies
         run: |
@@ -54,34 +50,14 @@ jobs:
       - name: Create GitHub Release
         id: create_release
         if: steps.check_act.outputs.is_act != 'true' && github.event_name != 'pull_request'
-        run: |
-          # Get tag name from ref (refs/tags/v1.0.0 -> v1.0.0)
-          TAG_NAME=${GITHUB_REF#refs/tags/}
-          
-          # Create a release using GitHub CLI or curl
-          RELEASE_RESPONSE=$(curl -X POST \
-            -H "Authorization: token $GITHUB_TOKEN" \
-            -H "Accept: application/vnd.github.v3+json" \
-            https://api.github.com/repos/$GITHUB_REPOSITORY/releases \
-            -d "{\"tag_name\":\"$TAG_NAME\",\"name\":\"$TAG_NAME\",\"body\":\"Automated release of dirdoc binary.\",\"draft\":false,\"prerelease\":false}")
-          
-          # Extract release ID
-          RELEASE_ID=$(echo $RELEASE_RESPONSE | grep -o '"id": [0-9]*' | head -1 | cut -d' ' -f2)
-          
-          # Upload assets
-          for ASSET in dirdoc dirdoc.exe; do
-            if [ -f "$ASSET" ]; then
-              echo "Uploading $ASSET to release $TAG_NAME"
-              curl -X POST \
-                -H "Authorization: token $GITHUB_TOKEN" \
-                -H "Content-Type: application/octet-stream" \
-                -H "Accept: application/vnd.github.v3+json" \
-                --data-binary @"$ASSET" \
-                "https://uploads.github.com/repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID/assets?name=$ASSET"
-            else
-              echo "Warning: Asset $ASSET not found"
-            fi
-          done
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.ref }}
+          name: ${{ github.ref }}
+          body: |
+            Automated release of dirdoc binary.
+          files: |
+            dirdoc
+            dirdoc.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_REPOSITORY: ${{ github.repository }}

@@ -14,12 +14,8 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-      # We need to checkout first to get our local actions
-      - name: Initial checkout
-        uses: actions/checkout@v4
-        
       - name: Checkout code
-        uses: ./.github/actions/checkout
+        uses: actions/checkout@v4
 
       - name: Install dependencies on Linux
         if: runner.os == 'Linux'
