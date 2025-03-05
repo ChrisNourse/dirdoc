@@ -65,7 +65,7 @@ jobs:
           VERSION=${GITHUB_REF#refs/tags/}
           
           # Configure GitHub CLI with token
-          echo "$GITHUB_TOKEN" | gh auth login --with-token
+          echo "$GH_PAT" | gh auth login --with-token
           
           # Create release with GitHub CLI
           gh release create "$VERSION" \
@@ -74,5 +74,4 @@ jobs:
             --notes "Automated release of dirdoc binary." \
             ./dirdoc ./dirdoc.exe
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_PAT: ${{ secrets.GH_PAT }}
