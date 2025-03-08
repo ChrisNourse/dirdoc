@@ -456,41 +456,28 @@ int finalize_output(const char *out_path, DocumentInfo *info) {
     fclose(out_final);
 
     // If splitting is enabled, split new_content into multiple files based on split_limit_bytes.
+    // Smart splitting logic: ensure documented files are not split
     if (split_enabled) {
-        size_t total_size = strlen(new_content);
-        size_t part_count = total_size / split_limit_bytes;
-        if (total_size % split_limit_bytes != 0) {
-            part_count++;
+        size_t split_points[MAX_SPLITS];
+        size_t num_splits = find_split_points(new_content, split_limit_bytes, split_points, MAX_SPLITS);
+        size_t start = 0;
+        for (size_t i = 0; i < num_splits; i++) {
+            size_t end = split_points[i];
+            // Write to split file from start to end
+            FILE *part_file = fopen(get_split_filename(out_path, i + 1), "w");
+            if (part_file) {
+                fwrite(new_content + start, 1, end - start, part_file);
+                fclose(part_file);
+            }
+            start = end;
         }
-        
-        for (size_t i = 0; i < part_count; i++) {
-            // Create new file name: original name with _part<number> suffix before extension (if any)
-            char part_filename[MAX_PATH_LEN];
-            char *dot = strrchr((char *)out_path, '.');
-            if (dot) {
-                size_t basename_len = dot - out_path;
-                snprintf(part_filename, sizeof(part_filename), "%.*s_part%zu%s", (int)basename_len, out_path, i + 1, dot);
-            } else {
-                snprintf(part_filename, sizeof(part_filename), "%s_part%zu", out_path, i + 1);
-            }
-            
-            FILE *part_file = fopen(part_filename, "w");
-            if (!part_file) {
-                fprintf(stderr, "Error: Cannot create split output file '%s'\n", part_filename);
-                free(new_content);
-                return 1;
-            }
-            
-            size_t offset = i * split_limit_bytes;
-            size_t bytes_to_write = split_limit_bytes;
-            if (offset + bytes_to_write > total_size) {
-                bytes_to_write = total_size - offset;
-            }
-            fwrite(new_content + offset, 1, bytes_to_write, part_file);
+        // Write the remaining content
+        FILE *part_file = fopen(get_split_filename(out_path, num_splits + 1), "w");
+        if (part_file) {
+            fwrite(new_content + start, 1, strlen(new_content) - start, part_file);
             fclose(part_file);
         }
-        
-        printf("✅ Output successfully split into %zu parts.\n", part_count);
+        printf("✅ Output successfully split into %zu parts.\n", num_splits + 1);
         // Remove the original unsplit output file.
         remove(out_path);
     }
