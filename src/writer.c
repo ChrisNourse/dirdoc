@@ -16,6 +16,8 @@
 static int split_enabled = 0;
 static size_t split_limit_bytes = 18 * 1024 * 1024; // default 18 MB
 #define MAX_SPLITS 100
+size_t find_split_points(const char *content, size_t limit, size_t *split_points, size_t max_splits);
+char* get_split_filename(const char *original_path, size_t part_number);
 
 // Global variables to hold extra ignore patterns from the command line.
 static char **g_extra_ignore_patterns = NULL;
@@ -331,8 +333,6 @@ void write_file_content(FILE *out, const char *path, DocumentInfo *info) {
     free(content);
 }
 
-size_t find_split_points(const char *content, size_t limit, size_t *split_points, size_t max_splits);
-char* get_split_filename(const char *original_path, size_t part_number);
     
 /**
  * @brief Finalizes the output file by prepending a header and handling file splitting if required.
