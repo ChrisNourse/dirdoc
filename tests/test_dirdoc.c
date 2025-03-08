@@ -16,6 +16,8 @@
 #include "stats.h"
 #include "writer.h"
 
+void test_smart_split();
+
 
 #ifndef MAX_PATH_LEN
 #define MAX_PATH_LEN 4096
