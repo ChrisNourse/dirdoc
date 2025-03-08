@@ -66,26 +66,36 @@ void test_smart_split() {
         long size = ftell(part_file);
         fseek(part_file, 0, SEEK_SET);
         
-        char *content = malloc(size + 1);
-        if (content) {
-            fread(content, 1, size, part_file);
-            content[size] = '\0';
-            
-            // Check if this part contains the full documented file content
-            if (strstr(content, "### Documented File") && 
-                strstr(content, "Content of documented file.")) {
-                found_intact = true;
+        if (size > 0) {
+            char *content = malloc(size + 1);
+            if (content) {
+                size_t read_size = fread(content, 1, size, part_file);
+                if (read_size > 0) {
+                    content[read_size] = '\0';
+                    
+                    // Check if this part contains the full documented file content
+                    if (strstr(content, "### Documented File") && 
+                        strstr(content, "Content of documented file.")) {
+                        found_intact = true;
+                    }
+                }
+                free(content);
             }
-            
-            free(content);
         }
         fclose(part_file);
         
         // Clean up the part file
-        remove(part_path);
+        if (remove(part_path) != 0) {
+            fprintf(stderr, "Warning: Could not remove file %s\n", part_path);
+        }
     }
     
-    assert(found_intact && "Documented file content should be preserved intact in one part");
+    if (!found_intact) {
+        fprintf(stderr, "Error: Documented file content was not preserved intact in one part\n");
+        assert(found_intact);
+    } else {
+        printf("✓ Documented file content was preserved intact\n");
+    }
 
     // Cleanup
     remove(doc_path);
