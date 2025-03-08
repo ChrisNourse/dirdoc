@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <libgen.h>
+#include <stdbool.h>
 #include "dirdoc.h"
 #include "writer.h"
 #include "scanner.h"
@@ -41,15 +43,49 @@ void test_smart_split() {
     int result = document_directory(test_dir, NULL, SPLIT_OUTPUT);
     assert(result == 0);
 
-    // Check that the documented file was not split
-    char expected_doc_split_path[256];
-    snprintf(expected_doc_split_path, sizeof(expected_doc_split_path), "%s_part1.md", doc_path);
-    // For the documented file, it should not be split, so check only the original exists
-    FILE *doc_split = fopen(expected_doc_split_path, "w");
-    if (doc_split) {
-        fclose(doc_split);
-        assert(0 && "Documented file should not be split");
+    // Check that the documented file content is preserved in one part
+    // We need to check if the content of the documented file is in one of the split parts
+    // and not broken across multiple parts
+    
+    // First, find the output file parts
+    char output_base[256];
+    char *base_name = basename(strdup(test_dir));
+    snprintf(output_base, sizeof(output_base), "%s_documentation", base_name);
+    free(base_name);
+    
+    // Check if the documented content is intact in any part
+    bool found_intact = false;
+    char part_path[256];
+    for (int i = 1; i <= 60; i++) { // Check up to 60 parts
+        snprintf(part_path, sizeof(part_path), "%s_part%d.md", output_base, i);
+        FILE *part_file = fopen(part_path, "r");
+        if (!part_file) continue;
+        
+        // Read the file content
+        fseek(part_file, 0, SEEK_END);
+        long size = ftell(part_file);
+        fseek(part_file, 0, SEEK_SET);
+        
+        char *content = malloc(size + 1);
+        if (content) {
+            fread(content, 1, size, part_file);
+            content[size] = '\0';
+            
+            // Check if this part contains the full documented file content
+            if (strstr(content, "### Documented File") && 
+                strstr(content, "Content of documented file.")) {
+                found_intact = true;
+            }
+            
+            free(content);
+        }
+        fclose(part_file);
+        
+        // Clean up the part file
+        remove(part_path);
     }
+    
+    assert(found_intact && "Documented file content should be preserved intact in one part");
 
     // Cleanup
     remove(doc_path);
