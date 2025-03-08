@@ -490,6 +490,8 @@ int finalize_output(const char *out_path, DocumentInfo *info) {
     return 0;
     }
 
+// AI i don't think this function is doing what i expect. If the document is suppsoed to be split it should not split across a document/file. It should make a new file early and keep the file in entirety.
+//If a file is too big to fit in a single document then we should make it very clear that the file is a continuation from a previous file.
 /**
  * @brief Finds appropriate split points to ensure documented files are not split.
  *
@@ -527,6 +529,7 @@ size_t find_split_points(const char *content, size_t limit, size_t *split_points
 
     return found_splits;
 }
+// Please make sure this is updated and tests are updated AI!
 
 /**
  * @brief Generates a split filename based on the original output path and part number.
