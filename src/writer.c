@@ -468,19 +468,39 @@ int finalize_output(const char *out_path, DocumentInfo *info) {
         for (size_t i = 0; i < num_splits; i++) {
             size_t end = split_points[i];
             // Write to split file from start to end
-            FILE *part_file = fopen(get_split_filename(out_path, i + 1), "w");
+            char *part_filename = get_split_filename(out_path, i + 1);
+            FILE *part_file = fopen(part_filename, "w");
             if (part_file) {
+                // Add a continuation notice if this isn't the first part
+                if (i > 0) {
+                    fprintf(part_file, "---\n**Continued from part %zu**\n\n", i);
+                }
+            
                 fwrite(new_content + start, 1, end - start, part_file);
+            
+                // Add a continuation notice if this isn't the last part
+                if (i < num_splits - 1) {
+                    fprintf(part_file, "\n\n---\n**Continued in part %zu**\n", i + 2);
+                }
+            
                 fclose(part_file);
             }
+            free(part_filename);
             start = end;
         }
         // Write the remaining content
-        FILE *part_file = fopen(get_split_filename(out_path, num_splits + 1), "w");
+        char *part_filename = get_split_filename(out_path, num_splits + 1);
+        FILE *part_file = fopen(part_filename, "w");
         if (part_file) {
+            // Add a continuation notice if this isn't the first part
+            if (num_splits > 0) {
+                fprintf(part_file, "---\n**Continued from part %zu**\n\n", num_splits);
+            }
+            
             fwrite(new_content + start, 1, strlen(new_content) - start, part_file);
             fclose(part_file);
         }
+        free(part_filename);
         printf("✅ Output successfully split into %zu parts.\n", num_splits + 1);
         // Remove the original unsplit output file.
         remove(out_path);
@@ -490,8 +510,6 @@ int finalize_output(const char *out_path, DocumentInfo *info) {
     return 0;
     }
 
-// AI i don't think this function is doing what i expect. If the document is suppsoed to be split it should not split across a document/file. It should make a new file early and keep the file in entirety.
-//If a file is too big to fit in a single document then we should make it very clear that the file is a continuation from a previous file.
 /**
  * @brief Finds appropriate split points to ensure documented files are not split.
  *
@@ -507,29 +525,70 @@ size_t find_split_points(const char *content, size_t limit, size_t *split_points
     size_t found_splits = 0;
 
     while (current + limit < content_length && found_splits < max_splits) {
-        // Find the last occurrence of "\n###" before the limit to avoid splitting a documented file
-        const char *start = content + current;
-        const char *split = NULL;
-        for (size_t i = current + limit; i > current; i--) {
-            if (strncmp(content + i, "\n### ", 5) == 0 || (i == 0 && strncmp(content, "### ", 4) == 0)) {
-                split = content + i + 1; // position after '\n'
+        // Start looking for a split point well before the limit to ensure we don't split a file
+        size_t search_start = current + (limit / 2);
+        
+        // Find the next occurrence of "### 📄" which indicates the start of a file
+        const char *file_marker = NULL;
+        for (size_t i = search_start; i < current + limit && i < content_length; i++) {
+            if (i + 6 < content_length && strncmp(content + i, "\n### 📄", 6) == 0) {
+                file_marker = content + i;
                 break;
             }
         }
-
-        if (split) {
-            split_points[found_splits++] = split - content;
-            current = split - content;
+        
+        if (file_marker) {
+            // Found a file marker before the limit - split right before it to keep the file intact
+            split_points[found_splits++] = file_marker - content + 1; // +1 to include the newline
+            current = file_marker - content + 1;
         } else {
-            // No split point found, force split
-            split_points[found_splits++] = current + limit;
-            current += limit;
+            // No file marker found before limit, look for any reasonable split point
+            const char *split = NULL;
+            
+            // Try to find a paragraph break or section header
+            for (size_t i = current + limit; i > search_start; i--) {
+                if (i + 2 < content_length && 
+                    content[i] == '\n' && content[i+1] == '\n') {
+                    // Found a paragraph break
+                    split = content + i + 1;
+                    break;
+                }
+                
+                if (i + 5 < content_length && 
+                    strncmp(content + i, "\n## ", 4) == 0) {
+                    // Found a section header
+                    split = content + i + 1;
+                    break;
+                }
+            }
+            
+            if (split) {
+                split_points[found_splits++] = split - content;
+                current = split - content;
+            } else {
+                // No good split point found, force split at a newline near the limit
+                const char *force_split = NULL;
+                for (size_t i = current + limit; i > current + limit - 200 && i > current; i--) {
+                    if (content[i] == '\n') {
+                        force_split = content + i + 1;
+                        break;
+                    }
+                }
+                
+                if (force_split) {
+                    split_points[found_splits++] = force_split - content;
+                    current = force_split - content;
+                } else {
+                    // Last resort: hard split at the limit
+                    split_points[found_splits++] = current + limit;
+                    current += limit;
+                }
+            }
         }
     }
 
     return found_splits;
 }
-// Please make sure this is updated and tests are updated AI!
 
 /**
  * @brief Generates a split filename based on the original output path and part number.
