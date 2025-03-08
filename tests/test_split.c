@@ -40,19 +40,21 @@ void test_smart_split() {
     // Set split options to enable splitting
     set_split_options(1, 0.01); // 0.01 MB limit for testing
 
-    // Run the documentation generation
-    int result = document_directory(test_dir, NULL, SPLIT_OUTPUT);
+    // Create output path in the tmp directory
+    char output_path[256];
+    snprintf(output_path, sizeof(output_path), "%s_documentation.md", test_dir);
+    
+    // Run the documentation generation with the specified output path
+    int result = document_directory(test_dir, output_path, SPLIT_OUTPUT);
     assert(result == 0);
 
     // Check that the documented file content is preserved in one part
     // We need to check if the content of the documented file is in one of the split parts
     // and not broken across multiple parts
     
-    // First, find the output file parts
+    // Use the output path we created earlier
     char output_base[256];
-    char *base_name = basename(strdup(test_dir));
-    snprintf(output_base, sizeof(output_base), "%s_documentation", base_name);
-    free(base_name);
+    snprintf(output_base, sizeof(output_base), "%s_documentation", test_dir);
     
     // Instead of checking all parts, just verify the test completed without errors
     printf("✓ Smart splitting test completed successfully\n");
