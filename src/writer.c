@@ -509,7 +509,7 @@ size_t find_split_points(const char *content, size_t limit, size_t *split_points
         const char *start = content + current;
         const char *split = NULL;
         for (size_t i = current + limit; i > current; i--) {
-            if (strncmp(content + i, "\n###", 4) == 0) {
+            if (strncmp(content + i, "\n### ", 5) == 0) {
                 split = content + i + 1; // position after '\n'
                 break;
             }
