@@ -485,10 +485,13 @@ int finalize_output(const char *out_path, DocumentInfo *info) {
     
     free(new_content);
     return 0;
-}
+    }
 
-/**
- * @brief Finds appropriate split points to ensure documented files are not split.
+    size_t find_split_points(const char *content, size_t limit, size_t *split_points, size_t max_splits);
+    char* get_split_filename(const char *original_path, size_t part_number);
+    
+    /**
+     * @brief Finds appropriate split points to ensure documented files are not split.
  *
  * @param content The full content to be split.
  * @param limit The maximum size per split in bytes.
