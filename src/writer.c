@@ -15,6 +15,9 @@
 // Declare static variables for split output options.
 static int split_enabled = 0;
 static size_t split_limit_bytes = 18 * 1024 * 1024; // default 18 MB
+#define MAX_SPLITS 100
+size_t find_split_points(const char *content, size_t limit, size_t *split_points, size_t max_splits);
+char* get_split_filename(const char *original_path, size_t part_number);
 
 // Global variables to hold extra ignore patterns from the command line.
 static char **g_extra_ignore_patterns = NULL;
@@ -330,6 +333,7 @@ void write_file_content(FILE *out, const char *path, DocumentInfo *info) {
     free(content);
 }
 
+    
 /**
  * @brief Finalizes the output file by prepending a header and handling file splitting if required.
  *
@@ -456,47 +460,157 @@ int finalize_output(const char *out_path, DocumentInfo *info) {
     fclose(out_final);
 
     // If splitting is enabled, split new_content into multiple files based on split_limit_bytes.
+    // Smart splitting logic: ensure documented files are not split
     if (split_enabled) {
-        size_t total_size = strlen(new_content);
-        size_t part_count = total_size / split_limit_bytes;
-        if (total_size % split_limit_bytes != 0) {
-            part_count++;
-        }
-        
-        for (size_t i = 0; i < part_count; i++) {
-            // Create new file name: original name with _part<number> suffix before extension (if any)
-            char part_filename[MAX_PATH_LEN];
-            char *dot = strrchr((char *)out_path, '.');
-            if (dot) {
-                size_t basename_len = dot - out_path;
-                snprintf(part_filename, sizeof(part_filename), "%.*s_part%zu%s", (int)basename_len, out_path, i + 1, dot);
-            } else {
-                snprintf(part_filename, sizeof(part_filename), "%s_part%zu", out_path, i + 1);
-            }
-            
+        size_t split_points[MAX_SPLITS];
+        size_t num_splits = find_split_points(new_content, split_limit_bytes, split_points, MAX_SPLITS);
+        size_t start = 0;
+        for (size_t i = 0; i < num_splits; i++) {
+            size_t end = split_points[i];
+            // Write to split file from start to end
+            char *part_filename = get_split_filename(out_path, i + 1);
             FILE *part_file = fopen(part_filename, "w");
-            if (!part_file) {
-                fprintf(stderr, "Error: Cannot create split output file '%s'\n", part_filename);
-                free(new_content);
-                return 1;
+            if (part_file) {
+                // Add a continuation notice if this isn't the first part
+                if (i > 0) {
+                    fprintf(part_file, "---\n**Continued from part %zu**\n\n", i);
+                }
+            
+                fwrite(new_content + start, 1, end - start, part_file);
+            
+                // Add a continuation notice if this isn't the last part
+                if (i < num_splits - 1) {
+                    fprintf(part_file, "\n\n---\n**Continued in part %zu**\n", i + 2);
+                }
+            
+                fclose(part_file);
+            }
+            free(part_filename);
+            start = end;
+        }
+        // Write the remaining content
+        char *part_filename = get_split_filename(out_path, num_splits + 1);
+        FILE *part_file = fopen(part_filename, "w");
+        if (part_file) {
+            // Add a continuation notice if this isn't the first part
+            if (num_splits > 0) {
+                fprintf(part_file, "---\n**Continued from part %zu**\n\n", num_splits);
             }
             
-            size_t offset = i * split_limit_bytes;
-            size_t bytes_to_write = split_limit_bytes;
-            if (offset + bytes_to_write > total_size) {
-                bytes_to_write = total_size - offset;
-            }
-            fwrite(new_content + offset, 1, bytes_to_write, part_file);
+            fwrite(new_content + start, 1, strlen(new_content) - start, part_file);
             fclose(part_file);
         }
-        
-        printf("✅ Output successfully split into %zu parts.\n", part_count);
+        free(part_filename);
+        printf("✅ Output successfully split into %zu parts.\n", num_splits + 1);
         // Remove the original unsplit output file.
         remove(out_path);
     }
     
     free(new_content);
     return 0;
+    }
+
+/**
+ * @brief Finds appropriate split points to ensure documented files are not split.
+ *
+ * @param content The full content to be split.
+ * @param limit The maximum size per split in bytes.
+ * @param split_points Array to store split indices.
+ * @param max_splits The maximum number of splits.
+ * @return size_t Number of split points found.
+ */
+size_t find_split_points(const char *content, size_t limit, size_t *split_points, size_t max_splits) {
+    size_t content_length = strlen(content);
+    size_t current = 0;
+    size_t found_splits = 0;
+
+    while (current + limit < content_length && found_splits < max_splits) {
+        // Start looking for a split point well before the limit to ensure we don't split a file
+        size_t search_start = current + (limit / 2);
+        
+        // Find the next occurrence of "### 📄" which indicates the start of a file
+        const char *file_marker = NULL;
+        for (size_t i = search_start; i < current + limit && i < content_length; i++) {
+            if (i + 6 < content_length && strncmp(content + i, "\n### 📄", 6) == 0) {
+                file_marker = content + i;
+                break;
+            }
+        }
+        
+        if (file_marker) {
+            // Found a file marker before the limit - split right before it to keep the file intact
+            split_points[found_splits++] = file_marker - content + 1; // +1 to include the newline
+            current = file_marker - content + 1;
+        } else {
+            // No file marker found before limit, look for any reasonable split point
+            const char *split = NULL;
+            
+            // Try to find a paragraph break or section header
+            for (size_t i = current + limit; i > search_start; i--) {
+                if (i + 2 < content_length && 
+                    content[i] == '\n' && content[i+1] == '\n') {
+                    // Found a paragraph break
+                    split = content + i + 1;
+                    break;
+                }
+                
+                if (i + 5 < content_length && 
+                    strncmp(content + i, "\n## ", 4) == 0) {
+                    // Found a section header
+                    split = content + i + 1;
+                    break;
+                }
+            }
+            
+            if (split) {
+                split_points[found_splits++] = split - content;
+                current = split - content;
+            } else {
+                // No good split point found, force split at a newline near the limit
+                const char *force_split = NULL;
+                for (size_t i = current + limit; i > current + limit - 200 && i > current; i--) {
+                    if (content[i] == '\n') {
+                        force_split = content + i + 1;
+                        break;
+                    }
+                }
+                
+                if (force_split) {
+                    split_points[found_splits++] = force_split - content;
+                    current = force_split - content;
+                } else {
+                    // Last resort: hard split at the limit
+                    split_points[found_splits++] = current + limit;
+                    current += limit;
+                }
+            }
+        }
+    }
+
+    return found_splits;
+}
+
+/**
+ * @brief Generates a split filename based on the original output path and part number.
+ *
+ * @param original_path The original output file path.
+ * @param part_number The part number for the split file.
+ * @return char* The generated split filename. The caller is responsible for freeing the memory.
+ */
+char* get_split_filename(const char *original_path, size_t part_number) {
+    char *dot = strrchr(original_path, '.');
+    size_t basename_length = dot ? (size_t)(dot - original_path) : strlen(original_path);
+    size_t new_length = basename_length + 10 + 1; // "_partXX" + extension + null terminator
+    char *new_filename = malloc(new_length);
+    if (!new_filename) return NULL;
+
+    if (dot) {
+        snprintf(new_filename, new_length, "%.*s_part%zu%s", (int)basename_length, original_path, part_number, dot);
+    } else {
+        snprintf(new_filename, new_length, "%s_part%zu", original_path, part_number);
+    }
+
+    return new_filename;
 }
 
 /**
