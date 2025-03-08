@@ -15,6 +15,7 @@
 // Declare static variables for split output options.
 static int split_enabled = 0;
 static size_t split_limit_bytes = 18 * 1024 * 1024; // default 18 MB
+#define MAX_SPLITS 100
 
 // Global variables to hold extra ignore patterns from the command line.
 static char **g_extra_ignore_patterns = NULL;
