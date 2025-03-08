@@ -452,6 +452,7 @@ void test_is_binary_file() {
     fclose(f);
     assert(is_binary_file(path) == false);
     printf("✔ test_is_text_file detection passed\n");
+    test_smart_split();
 
 #ifndef INSPECT_TEMP
     remove(path);

@@ -59,9 +59,3 @@ void test_smart_split() {
     printf("✔ test_smart_split passed\n");
 }
 
-int main() {
-    printf("Running smart split tests...\n");
-    test_smart_split();
-    printf("All smart split tests passed!\n");
-    return 0;
-}
