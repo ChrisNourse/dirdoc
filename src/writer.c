@@ -490,6 +490,8 @@ int finalize_output(const char *out_path, DocumentInfo *info) {
     return 0;
     }
 
+/**
+ * @brief Finds appropriate split points to ensure documented files are not split.
  *
  * @param content The full content to be split.
  * @param limit The maximum size per split in bytes.
