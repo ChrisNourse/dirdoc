@@ -7,7 +7,6 @@
 #include "scanner.h"
 #include "gitignore.h"
 #include "stats.h"
-#include "tests.h"  // Assuming a common header for tests
 
 /**
  * @brief Test that verifies smart splitting preserves documented files.
