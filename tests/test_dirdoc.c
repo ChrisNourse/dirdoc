@@ -519,6 +519,8 @@ void test_is_binary_file() {
 }
 
 /* Main test runner */
+void test_smart_split();
+
 int main(void) {
     printf("Running tests for dirdoc...\n");
     test_get_default_output();
