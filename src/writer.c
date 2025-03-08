@@ -500,6 +500,67 @@ int finalize_output(const char *out_path, DocumentInfo *info) {
 }
 
 /**
+ * @brief Finds appropriate split points to ensure documented files are not split.
+ *
+ * @param content The full content to be split.
+ * @param limit The maximum size per split in bytes.
+ * @param split_points Array to store split indices.
+ * @param max_splits The maximum number of splits.
+ * @return size_t Number of split points found.
+ */
+size_t find_split_points(const char *content, size_t limit, size_t *split_points, size_t max_splits) {
+    size_t content_length = strlen(content);
+    size_t current = 0;
+    size_t found_splits = 0;
+
+    while (current + limit < content_length && found_splits < max_splits) {
+        // Find the last occurrence of "\n###" before the limit to avoid splitting a documented file
+        const char *start = content + current;
+        const char *split = NULL;
+        for (size_t i = current + limit; i > current; i--) {
+            if (strncmp(content + i, "\n###", 4) == 0) {
+                split = content + i + 1; // position after '\n'
+                break;
+            }
+        }
+
+        if (split) {
+            split_points[found_splits++] = split - content;
+            current = split - content;
+        } else {
+            // No split point found, force split
+            split_points[found_splits++] = current + limit;
+            current += limit;
+        }
+    }
+
+    return found_splits;
+}
+
+/**
+ * @brief Generates a split filename based on the original output path and part number.
+ *
+ * @param original_path The original output file path.
+ * @param part_number The part number for the split file.
+ * @return char* The generated split filename. The caller is responsible for freeing the memory.
+ */
+char* get_split_filename(const char *original_path, size_t part_number) {
+    char *dot = strrchr(original_path, '.');
+    size_t basename_length = dot ? (size_t)(dot - original_path) : strlen(original_path);
+    size_t new_length = basename_length + 10 + 1; // "_partXX" + extension + null terminator
+    char *new_filename = malloc(new_length);
+    if (!new_filename) return NULL;
+
+    if (dot) {
+        snprintf(new_filename, new_length, "%.*s_part%zu%s", (int)basename_length, original_path, part_number, dot);
+    } else {
+        snprintf(new_filename, new_length, "%s_part%zu", original_path, part_number);
+    }
+
+    return new_filename;
+}
+
+/**
  * @brief Main documentation generation function.
  *
  * Scans the specified directory, builds the structure and file content sections,
