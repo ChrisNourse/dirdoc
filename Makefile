@@ -31,7 +31,7 @@ OBJECTS = $(patsubst $(SRC_DIR)/%.c, $(BUILD_DIR)/%.o, $(SOURCES))
 DIRDOC_OBJ = $(BUILD_DIR)/dirdoc.o
 OTHER_OBJS = $(filter-out $(DIRDOC_OBJ), $(OBJECTS))
 
-.PHONY: all clean super_clean deps help test build_temp clean_temp
+.PHONY: all clean super_clean deps help test build_temp clean_temp samples
 
 all: deps $(BUILD_DIR)/dirdoc
 	@echo "✅ Build completed successfully"
@@ -116,5 +116,6 @@ help:
 	@echo "  test        - Build and run the test suite"
 	@echo "  build_temp  - Build the test binary for generating temp test files (without auto-cleanup)"
 	@echo "  clean_temp  - Remove all temporary test files from the 'tmp' directory"
+	@echo "  samples     - Create a sample project structure to demonstrate dirdoc"
 	@echo "  help        - Show this help message"
 	

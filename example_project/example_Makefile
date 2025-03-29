@@ -1,0 +1,40 @@
+
+CC = gcc
+CFLAGS = -Wall -Wextra -g -std=c99
+LDFLAGS = -lm
+
+SRCDIR = src
+OBJDIR = obj
+BINDIR = bin
+
+# Source files and object files
+SRCS = $(SRCDIR)/main.c $(SRCDIR)/utils.c
+OBJS = $(patsubst $(SRCDIR)/%.c,$(OBJDIR)/%.o,$(SRCS))
+
+# Target executable
+TARGET = $(BINDIR)/sample_app
+
+# Default target
+all: dirs $(TARGET)
+
+# Create directories
+dirs:
+	mkdir -p $(BINDIR) $(OBJDIR)
+
+# Compile object files
+$(OBJDIR)/%.o: $(SRCDIR)/%.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+# Link the executable
+$(TARGET): $(OBJS)
+	$(CC) $(OBJS) -o $@ $(LDFLAGS)
+
+# Clean up
+clean:
+	rm -rf $(BINDIR) $(OBJDIR)
+
+# Run the application
+run: all
+	$(TARGET)
+
+.PHONY: all dirs clean run

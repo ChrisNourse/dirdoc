@@ -6,3 +6,6 @@ secrets/*
 *_documentation.md
 tmp/*
 .aider*
+
+#Include everything from the example project
+!/example_project/*

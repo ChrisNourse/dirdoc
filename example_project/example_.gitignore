@@ -1,0 +1,24 @@
+# Build directories
+bin/
+obj/
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*~
+
+# Compiled files
+*.o
+*.out
+*.exe
+
+# Debug files
+*.dSYM/
+*.su
+*.idb
+*.pdb
+
+# OS specific files
+.DS_Store
+Thumbs.db
