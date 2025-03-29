@@ -720,7 +720,7 @@ int main(void) {
     if (r == 0) {
         printf("Empty folder 'tmp' removed successfully.\n");
     } else if (r == 1) {
-        printf("Folder 'tmp' is not empty; not removed.\n");
+        printf("Note: 'tmp' directory preserved (contains test files or user data - this is normal).\n");
     } else {
         printf("Failed to remove folder 'tmp'.\n");
     }
