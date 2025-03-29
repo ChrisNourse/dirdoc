@@ -107,13 +107,6 @@ super_clean:
 	rm -rf $(BUILD_DIR) $(DEPS_DIR)
 	@echo "✅ Clean complete"
 
-samples:
-	@echo "⏳ Creating sample project structure..."
-	@mkdir -p samples/sample_project/src samples/sample_project/docs samples/sample_project/tests
-	@chmod +x samples/run_sample.sh
-	@echo "✅ Sample project created in samples/sample_project"
-	@echo "🚀 Run './samples/run_sample.sh' to generate documentation for the sample"
-
 help:
 	@echo "Available targets:"
 	@echo "  all         - Build the dirdoc application"
