@@ -75,129 +75,21 @@ void set_split_options(int enabled, double limit_mb) {
 /**
  * @brief Adds extra ignore patterns to the provided GitignoreList.
  *
- * For each extra pattern, parses negation, anchoring, and directory-only markers,
- * then appends it as a GitignoreRule to the GitignoreList.
+ * For each extra pattern, uses the shared parse_gitignore_pattern_string function
+ * to parse the pattern and add it to the GitignoreList.
  *
  * @param gitignore Pointer to the GitignoreList.
  * @param patterns Array of extra ignore pattern strings.
  * @param count Number of extra patterns.
  */
- static void add_extra_ignore_patterns(GitignoreList *gitignore, char **patterns, int count) {
+static void add_extra_ignore_patterns(GitignoreList *gitignore, char **patterns, int count) {
     // Make sure gitignore exists
     if (!gitignore) return;
     
-    // Handle initial allocation if this is the first pattern
-    if (gitignore->rules == NULL) {
-        gitignore->capacity = count > 16 ? count : 16;  // Start with reasonable capacity
-        gitignore->rules = malloc(sizeof(GitignoreRule) * gitignore->capacity);
-        if (!gitignore->rules) {
-            return;  // Allocation failed
-        }
-    } else if (gitignore->count + count > gitignore->capacity) {
-        // Need to expand capacity
-        size_t new_capacity = gitignore->capacity * 2;
-        while (gitignore->count + count > new_capacity) {
-            new_capacity *= 2;
-        }
-        
-        GitignoreRule *new_rules = realloc(gitignore->rules, 
-                                          sizeof(GitignoreRule) * new_capacity);
-        if (!new_rules) {
-            return;  // Reallocation failed
-        }
-        
-        gitignore->rules = new_rules;
-        gitignore->capacity = new_capacity;
-    }
-    
-    // Now process each pattern
+    // Process each pattern using the shared function
     for (int i = 0; i < count; i++) {
         if (!patterns[i]) continue;  // Skip NULL patterns
-        
-        char *pattern = strdup(patterns[i]);
-        if (!pattern) continue;  // Skip on allocation failure
-        
-        bool neg = false, anc = false, dir_only = false;
-        
-        // Handle negation: pattern starts with !
-        if (pattern[0] == '!') {
-            neg = true;
-            memmove(pattern, pattern + 1, strlen(pattern));
-            pattern[strlen(pattern) - 1] = '\0';  // Adjust null terminator
-        }
-        
-        // Handle anchoring: pattern starts with /
-        if (pattern[0] == '/') {
-            anc = true;
-            memmove(pattern, pattern + 1, strlen(pattern));
-            pattern[strlen(pattern) - 1] = '\0';  // Adjust null terminator
-        }
-        
-        // Handle directory-only: pattern ends with /
-        size_t len = strlen(pattern);
-        if (len > 0 && pattern[len - 1] == '/') {
-            dir_only = true;
-            pattern[len - 1] = '\0';
-        }
-        
-        // Now create the regex for this pattern
-        // First create a suitable regex pattern
-        size_t pattern_len = strlen(pattern);
-        char *regex_pattern = malloc(pattern_len * 4 + 10);  // Generous allocation
-        if (!regex_pattern) {
-            free(pattern);
-            continue;
-        }
-        
-        // Build regex: anchor beginning if specified or allow match anywhere
-        strcpy(regex_pattern, anc ? "^" : "^.*");
-        
-        // Translate gitignore pattern to regex
-        // This is a simplified version - you might need to enhance based on your needs
-        char *dest = regex_pattern + strlen(regex_pattern);
-        for (size_t j = 0; j < pattern_len; j++) {
-            if (pattern[j] == '*') {
-                // * means any characters except / in gitignore
-                strcpy(dest, "[^/]*");
-                dest += 5;
-            } else if (pattern[j] == '?') {
-                // ? means any one character except / in gitignore
-                strcpy(dest, "[^/]");
-                dest += 4;
-            } else if (strchr(".^$+()[]{}|\\", pattern[j])) {
-                // Escape regex special chars
-                *dest++ = '\\';
-                *dest++ = pattern[j];
-            } else {
-                *dest++ = pattern[j];
-            }
-        }
-        
-        // For directory patterns, match paths inside the directory too
-        if (dir_only) {
-            strcpy(dest, "(/.*)?$");
-        } else {
-            strcpy(dest, "$");
-        }
-        
-        // Now compile the regex
-        regex_t regex;
-        int ret = regcomp(&regex, regex_pattern, REG_EXTENDED | REG_NOSUB);
-        free(regex_pattern);  // Don't need this anymore
-        
-        if (ret != 0) {
-            // Regex compilation failed, skip this pattern
-            free(pattern);
-            continue;
-        }
-        
-        // Add rule to gitignore list
-        size_t rule_index = gitignore->count++;
-        gitignore->rules[rule_index].pattern = pattern;
-        gitignore->rules[rule_index].negation = neg;
-        gitignore->rules[rule_index].anchored = anc;
-        gitignore->rules[rule_index].dir_only = dir_only;
-        gitignore->rules[rule_index].regex = regex;
+        parse_gitignore_pattern_string(patterns[i], gitignore);
     }
 }
 
