@@ -2,15 +2,14 @@
 #include <stdlib.h>
 #include <string.h>
 
-// This is the real implementation using cpp-tiktoken
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 // Forward declaration of the C++ wrapper struct
 typedef struct TiktokenWrapper TiktokenWrapper;
 
 // Implementation in tiktoken_cpp.cpp
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern TiktokenWrapper* tiktoken_cpp_get_encoding(const char* encoding_name);
 extern int tiktoken_cpp_encode(TiktokenWrapper* wrapper, const char* text, size_t text_len, tiktoken_token_t** tokens_out);
 extern void tiktoken_cpp_free(TiktokenWrapper* wrapper);
