@@ -70,47 +70,45 @@ build_tiktoken: $(DEPS_DIR)/download_tiktoken.sh
 $(DEPS_DIR)/download_tiktoken.sh:
 	@echo "📦 Creating download script..."
 	@mkdir -p $(DEPS_DIR)
-	@cat > $(DEPS_DIR)/download_tiktoken.sh << 'EOF'
-#!/bin/bash
-
-# Script to download and build cpp-tiktoken
-
-set -e
-
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-TIKTOKEN_DIR="${SCRIPT_DIR}/tiktoken"
-TIKTOKEN_REPO="https://github.com/gh-markt/cpp-tiktoken.git"
-PCRE2_DIR="${TIKTOKEN_DIR}/pcre2"
-
-# Create directory if it doesn't exist
-mkdir -p "${TIKTOKEN_DIR}"
-
-# Clone the repository if it doesn't exist
-if [ ! -d "${TIKTOKEN_DIR}/.git" ]; then
-    echo "Cloning cpp-tiktoken repository..."
-    rm -rf "${TIKTOKEN_DIR}"
-    git clone "${TIKTOKEN_REPO}" "${TIKTOKEN_DIR}"
-else
-    echo "cpp-tiktoken repository already exists, updating..."
-    cd "${TIKTOKEN_DIR}" && git pull
-fi
-
-# Initialize and update submodules
-echo "Initializing and updating submodules..."
-cd "${TIKTOKEN_DIR}" && git submodule update --init --recursive
-
-# Create build directory
-mkdir -p "${TIKTOKEN_DIR}/build"
-
-# Build and install
-cd "${TIKTOKEN_DIR}/build"
-echo "Building cpp-tiktoken..."
-cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="${TIKTOKEN_DIR}/install"
-make -j$(nproc)
-make install
-
-echo "cpp-tiktoken has been built and installed to ${TIKTOKEN_DIR}/install"
-EOF
+	@echo '#!/bin/bash' > $(DEPS_DIR)/download_tiktoken.sh
+	@echo '' >> $(DEPS_DIR)/download_tiktoken.sh
+	@echo '# Script to download and build cpp-tiktoken' >> $(DEPS_DIR)/download_tiktoken.sh
+	@echo '' >> $(DEPS_DIR)/download_tiktoken.sh
+	@echo 'set -e' >> $(DEPS_DIR)/download_tiktoken.sh
+	@echo '' >> $(DEPS_DIR)/download_tiktoken.sh
+	@echo 'SCRIPT_DIR="$$(cd "$$(dirname "$${BASH_SOURCE[0]}")" && pwd)"' >> $(DEPS_DIR)/download_tiktoken.sh
+	@echo 'TIKTOKEN_DIR="$${SCRIPT_DIR}/tiktoken"' >> $(DEPS_DIR)/download_tiktoken.sh
+	@echo 'TIKTOKEN_REPO="https://github.com/gh-markt/cpp-tiktoken.git"' >> $(DEPS_DIR)/download_tiktoken.sh
+	@echo 'PCRE2_DIR="$${TIKTOKEN_DIR}/pcre2"' >> $(DEPS_DIR)/download_tiktoken.sh
+	@echo '' >> $(DEPS_DIR)/download_tiktoken.sh
+	@echo '# Create directory if it doesn'"'"'t exist' >> $(DEPS_DIR)/download_tiktoken.sh
+	@echo 'mkdir -p "$${TIKTOKEN_DIR}"' >> $(DEPS_DIR)/download_tiktoken.sh
+	@echo '' >> $(DEPS_DIR)/download_tiktoken.sh
+	@echo '# Clone the repository if it doesn'"'"'t exist' >> $(DEPS_DIR)/download_tiktoken.sh
+	@echo 'if [ ! -d "$${TIKTOKEN_DIR}/.git" ]; then' >> $(DEPS_DIR)/download_tiktoken.sh
+	@echo '    echo "Cloning cpp-tiktoken repository..."' >> $(DEPS_DIR)/download_tiktoken.sh
+	@echo '    rm -rf "$${TIKTOKEN_DIR}"' >> $(DEPS_DIR)/download_tiktoken.sh
+	@echo '    git clone "$${TIKTOKEN_REPO}" "$${TIKTOKEN_DIR}"' >> $(DEPS_DIR)/download_tiktoken.sh
+	@echo 'else' >> $(DEPS_DIR)/download_tiktoken.sh
+	@echo '    echo "cpp-tiktoken repository already exists, updating..."' >> $(DEPS_DIR)/download_tiktoken.sh
+	@echo '    cd "$${TIKTOKEN_DIR}" && git pull' >> $(DEPS_DIR)/download_tiktoken.sh
+	@echo 'fi' >> $(DEPS_DIR)/download_tiktoken.sh
+	@echo '' >> $(DEPS_DIR)/download_tiktoken.sh
+	@echo '# Initialize and update submodules' >> $(DEPS_DIR)/download_tiktoken.sh
+	@echo 'echo "Initializing and updating submodules..."' >> $(DEPS_DIR)/download_tiktoken.sh
+	@echo 'cd "$${TIKTOKEN_DIR}" && git submodule update --init --recursive' >> $(DEPS_DIR)/download_tiktoken.sh
+	@echo '' >> $(DEPS_DIR)/download_tiktoken.sh
+	@echo '# Create build directory' >> $(DEPS_DIR)/download_tiktoken.sh
+	@echo 'mkdir -p "$${TIKTOKEN_DIR}/build"' >> $(DEPS_DIR)/download_tiktoken.sh
+	@echo '' >> $(DEPS_DIR)/download_tiktoken.sh
+	@echo '# Build and install' >> $(DEPS_DIR)/download_tiktoken.sh
+	@echo 'cd "$${TIKTOKEN_DIR}/build"' >> $(DEPS_DIR)/download_tiktoken.sh
+	@echo 'echo "Building cpp-tiktoken..."' >> $(DEPS_DIR)/download_tiktoken.sh
+	@echo 'cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$${TIKTOKEN_DIR}/install"' >> $(DEPS_DIR)/download_tiktoken.sh
+	@echo 'make -j$$(nproc)' >> $(DEPS_DIR)/download_tiktoken.sh
+	@echo 'make install' >> $(DEPS_DIR)/download_tiktoken.sh
+	@echo '' >> $(DEPS_DIR)/download_tiktoken.sh
+	@echo 'echo "cpp-tiktoken has been built and installed to $${TIKTOKEN_DIR}/install"' >> $(DEPS_DIR)/download_tiktoken.sh
 	@chmod +x $(DEPS_DIR)/download_tiktoken.sh
 
 $(DEPS_DIR)/$(COSMO_ZIP):
