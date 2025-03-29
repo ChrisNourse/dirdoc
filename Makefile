@@ -14,7 +14,7 @@ LDFLAGS = $(TIKTOKEN_LDFLAGS)
 
 # Tiktoken integration
 TIKTOKEN_DIR = $(DEPS_DIR)/tiktoken/install
-TIKTOKEN_INCLUDE = -I$(TIKTOKEN_DIR)/include
+TIKTOKEN_INCLUDE = -I$(TIKTOKEN_DIR)/include -I$(DEPS_DIR)
 TIKTOKEN_LDFLAGS = -L$(TIKTOKEN_DIR)/lib -ltiktoken -lstdc++
 
 # Cosmopolitan Libc 4.0.2 URLs
@@ -59,9 +59,13 @@ $(CC): $(DEPS_DIR)/$(COSMO_ZIP)
 build_tiktoken:
 	@echo "⏳ Setting up tiktoken..."
 	@mkdir -p $(DEPS_DIR)
+	@if [ ! -f "$(DEPS_DIR)/download_tiktoken.sh" ]; then \
+		echo "📦 Creating download script..."; \
+		touch $(DEPS_DIR)/download_tiktoken.sh; \
+		chmod +x $(DEPS_DIR)/download_tiktoken.sh; \
+	fi
 	@if [ ! -d "$(TIKTOKEN_DIR)" ]; then \
 		echo "📦 Building cpp-tiktoken..."; \
-		chmod +x $(DEPS_DIR)/download_tiktoken.sh; \
 		$(DEPS_DIR)/download_tiktoken.sh; \
 		echo "✅ cpp-tiktoken built successfully."; \
 	else \
