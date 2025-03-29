@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-// Forward declaration of the C++ wrapper struct
-struct TiktokenWrapper;
+// Define a C-compatible struct for wrapper
+typedef struct TiktokenWrapper TiktokenWrapper;
 
 // External functions implemented in tiktoken_cpp.cpp
 extern TiktokenWrapper* tiktoken_cpp_get_encoding(const char* encoding_name);
