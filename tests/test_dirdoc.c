@@ -5,6 +5,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <libgen.h>  // Add this line for basename declaration
+#include <ctype.h>   // For isalnum() and isspace()
 #ifdef _WIN32
 #include <windows.h>
 #endif
@@ -17,6 +18,7 @@
 #include "writer.h"
 
 void test_smart_split();
+void test_tiktoken();
 
 
 #ifndef MAX_PATH_LEN
@@ -438,6 +440,68 @@ void test_stats() {
     printf("✔ test_stats passed\n");
 }
 
+/* Test tiktoken initialization and token counting */
+void test_tiktoken() {
+    // Test initialization
+    bool init_result = init_tiktoken();
+    assert(init_result == true);
+    printf("✔ tiktoken initialization passed\n");
+    
+    // Test token counting with different text samples
+    const char *samples[] = {
+        "This is a simple sentence.", 
+        "This sentence has\nmultiple lines\nto test.",
+        "Special characters: !@#$%^&*()",
+        "Code: `int main() { return 0; }`",
+        "A longer paragraph with multiple sentences. This should result in more tokens. "
+        "The tiktoken library should properly tokenize this text according to the GPT models' behavior."
+    };
+    
+    for (int i = 0; i < sizeof(samples)/sizeof(samples[0]); i++) {
+        DocumentInfo info = {0};
+        calculate_token_stats(samples[i], &info);
+        
+        // Each sample should have at least one token
+        assert(info.total_tokens > 0);
+        
+        // Simple validation: tokens should be less than or equal to character count
+        assert(info.total_tokens <= strlen(samples[i]));
+        
+        // For the stub implementation, we should have roughly one token per word/symbol
+        // (This is a rough validation that will work with our stub implementation)
+        int estimated_token_count = 0;
+        const char *p = samples[i];
+        bool in_word = false;
+        
+        while (*p) {
+            if (isalnum((unsigned char)*p) || *p == '_') {
+                if (!in_word) {
+                    estimated_token_count++;
+                    in_word = true;
+                }
+            } else {
+                if (in_word) {
+                    in_word = false;
+                }
+                if (!isspace((unsigned char)*p)) {
+                    estimated_token_count++; // Count non-space, non-word characters as tokens
+                }
+            }
+            p++;
+        }
+        
+        // Our token count should be within a reasonable range of this simple estimate
+        // This is a very rough check mainly to ensure the function is doing something sensible
+        assert(info.total_tokens > 0 && info.total_tokens <= estimated_token_count * 2);
+        
+        printf("  Sample %d: %zu tokens\n", i+1, info.total_tokens);
+    }
+    
+    // Cleanup
+    cleanup_tiktoken();
+    printf("✔ tiktoken token counting passed\n");
+}
+
 /* Test detecting a binary file.
  * Creates a temporary binary file and asserts that is_binary_file returns true.
  */
@@ -644,6 +708,7 @@ int main(void) {
     test_compare_entries();
     test_scan_directory();
     test_stats();
+    test_tiktoken();  // Add the new tiktoken test
     test_is_binary_file();
     test_ignore_extra_patterns_with_ngi();
     test_ignore_directory();
@@ -655,7 +720,7 @@ int main(void) {
     if (r == 0) {
         printf("Empty folder 'tmp' removed successfully.\n");
     } else if (r == 1) {
-        printf("Folder 'tmp' is not empty; not removed.\n");
+        printf("Note: 'tmp' directory preserved (contains test files or user data - this is normal).\n");
     } else {
         printf("Failed to remove folder 'tmp'.\n");
     }

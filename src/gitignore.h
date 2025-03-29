@@ -26,6 +26,11 @@ typedef struct {
  */
 void load_gitignore(const char *dir_path, GitignoreList *gitignore);
 
+/* Parses a single gitignore pattern string and adds it to the provided GitignoreList.
+ * Returns 0 on success, -1 on error.
+ */
+int parse_gitignore_pattern_string(const char *pattern, GitignoreList *list);
+
 /* Checks whether the given path should be ignored based on the compiled gitignore rules.
  * Returns true if the path should be ignored.
  */

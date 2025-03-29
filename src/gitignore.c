@@ -88,43 +88,46 @@ static char *translate_gitignore_pattern(const char *pattern, bool dir_only) {
 }
 
 // Update the parse_gitignore_line function to pass dir_only to translate_gitignore_pattern
-static int parse_gitignore_line(const char *line, GitignoreList *list) {
-    // Skip leading whitespace.
-    while (*line && isspace((unsigned char)*line)) line++;
-    if (*line == '\0' || *line == '#') return 0; // skip empty or comment lines
+/* Parses a single gitignore pattern string and adds it to the provided GitignoreList.
+ * Returns 0 on success, -1 on error.
+ */
+int parse_gitignore_pattern_string(const char *pattern_str, GitignoreList *list) {
+    if (!pattern_str || !list) return -1;
     
-    // Duplicate the line so we can modify it.
-    char *pattern = strdup(line);
+    // Skip empty patterns
+    if (*pattern_str == '\0') return 0;
+    
+    // Duplicate the pattern so we can modify it.
+    char *pattern = strdup(pattern_str);
     if (!pattern) return -1;
-    // Trim trailing whitespace.
-    size_t l = strlen(pattern);
-    while (l > 0 && isspace((unsigned char)pattern[l - 1])) {
-        pattern[--l] = '\0';
-    }
+    
+    // Parse pattern flags
     bool negation = false;
     if (pattern[0] == '!') {
         negation = true;
         memmove(pattern, pattern + 1, strlen(pattern));
     }
+    
     bool anchored = false;
     if (pattern[0] == '/') {
         anchored = true;
     }
+    
     bool dir_only = false;
-    l = strlen(pattern);
-    if (l > 0 && pattern[l - 1] == '/') {
+    size_t len = strlen(pattern);
+    if (len > 0 && pattern[len - 1] == '/') {
         dir_only = true;
-        pattern[l - 1] = '\0'; // remove trailing '/'
+        pattern[len - 1] = '\0'; // remove trailing '/'
     }
     
-    // Pass dir_only to translate_gitignore_pattern
+    // Generate regex pattern from gitignore pattern
     char *regex_str = translate_gitignore_pattern(pattern, dir_only);
     if (!regex_str) {
         free(pattern);
         return -1;
     }
     
-    // Compile the regex.
+    // Compile the regex
     regex_t regex;
     int ret = regcomp(&regex, regex_str, REG_EXTENDED | REG_NOSUB);
     free(regex_str);
@@ -133,7 +136,7 @@ static int parse_gitignore_line(const char *line, GitignoreList *list) {
         return -1;
     }
     
-    // Ensure capacity.
+    // Ensure capacity in the GitignoreList
     if (list->count >= list->capacity) {
         size_t new_capacity = list->capacity ? list->capacity * 2 : 16;
         GitignoreRule *new_rules = realloc(list->rules, new_capacity * sizeof(GitignoreRule));
@@ -146,6 +149,7 @@ static int parse_gitignore_line(const char *line, GitignoreList *list) {
         list->capacity = new_capacity;
     }
     
+    // Add the new rule
     GitignoreRule *rule = &list->rules[list->count++];
     rule->pattern = pattern;
     rule->negation = negation;
@@ -154,6 +158,26 @@ static int parse_gitignore_line(const char *line, GitignoreList *list) {
     rule->regex = regex;
     
     return 0;
+}
+
+static int parse_gitignore_line(const char *line, GitignoreList *list) {
+    // Skip leading whitespace.
+    while (*line && isspace((unsigned char)*line)) line++;
+    if (*line == '\0' || *line == '#') return 0; // skip empty or comment lines
+    
+    // Trim trailing whitespace before processing.
+    char *trimmed_line = strdup(line);
+    if (!trimmed_line) return -1;
+    
+    size_t l = strlen(trimmed_line);
+    while (l > 0 && isspace((unsigned char)trimmed_line[l - 1])) {
+        trimmed_line[--l] = '\0';
+    }
+    
+    // Use the common pattern parsing function
+    int result = parse_gitignore_pattern_string(trimmed_line, list);
+    free(trimmed_line);
+    return result;
 }
 
 void load_gitignore(const char *dir_path, GitignoreList *gitignore) {
