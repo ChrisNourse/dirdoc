@@ -6,6 +6,7 @@
 #include <map>
 #include <stdexcept>
 #include <cstring>
+#include <cctype>
 
 // Forward declarations for tiktoken library
 namespace tiktoken {
@@ -24,10 +25,6 @@ namespace tiktoken {
         virtual ~GptEncoding() = default;
     };
 }
-#include <string>
-#include <vector>
-#include <stdexcept>
-#include <cstring>
 
 extern "C" {
 #include "tiktoken.h"

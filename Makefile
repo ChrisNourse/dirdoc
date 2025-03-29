@@ -127,7 +127,7 @@ $(BUILD_DIR)/dirdoc: $(OTHER_OBJS) $(DIRDOC_OBJ)
 	$(CC) $(LDFLAGS) -o $@ $(OTHER_OBJS) $(DIRDOC_OBJ)
 	@echo "✅ Build complete"
 
-$(BUILD_DIR)/dirdoc_test: $(wildcard $(SRC_DIR)/*.c) $(wildcard $(TEST_DIR)/*.c) | $(BUILD_DIR) deps
+$(BUILD_DIR)/dirdoc_test: $(wildcard $(SRC_DIR)/*.c) $(wildcard $(TEST_DIR)/*.c) $(CPP_OBJECTS) | $(BUILD_DIR) deps
 	@echo "⏳ Building tests..."
 	$(CC) $(CFLAGS) -DUNIT_TEST -I. -I$(SRC_DIR) -I$(TEST_DIR) -Ideps/cosmocc/include -o $@ $^ $(LDFLAGS)
 	@echo "✅ Test build complete"
