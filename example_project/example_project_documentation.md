@@ -2,7 +2,7 @@
 
 The output is a Markdown document summarizing a directory’s structure and file contents. It begins with token and size statistics, followed by a hierarchical view of the directory layout. For each file (unless omitted in structure-only mode), its contents are included in fenced code blocks with optional language annotations and metadata like file size, forming a complete, self-contained reference.
 
-Token Size: 3289
+Token Size: 3343
 
 # Directory Documentation: 
 
