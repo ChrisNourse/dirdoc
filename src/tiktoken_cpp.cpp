@@ -1,5 +1,5 @@
-// Try to include the library from the installed location
-#include "../deps/tiktoken/install/include/tiktoken/encoding.h"
+// Try to include the library
+#include "tiktoken/encoding.h"
 #include <string>
 #include <vector>
 #include <stdexcept>

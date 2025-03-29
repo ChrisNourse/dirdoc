@@ -56,14 +56,9 @@ $(CC): $(DEPS_DIR)/$(COSMO_ZIP)
 		echo "✅ cosmocc already exists, skipping unzip"; \
 	fi
 
-build_tiktoken:
+build_tiktoken: $(DEPS_DIR)/download_tiktoken.sh
 	@echo "⏳ Setting up tiktoken..."
 	@mkdir -p $(DEPS_DIR)
-	@if [ ! -f "$(DEPS_DIR)/download_tiktoken.sh" ]; then \
-		echo "📦 Creating download script..."; \
-		touch $(DEPS_DIR)/download_tiktoken.sh; \
-		chmod +x $(DEPS_DIR)/download_tiktoken.sh; \
-	fi
 	@if [ ! -d "$(TIKTOKEN_DIR)" ]; then \
 		echo "📦 Building cpp-tiktoken..."; \
 		$(DEPS_DIR)/download_tiktoken.sh; \
@@ -71,6 +66,11 @@ build_tiktoken:
 	else \
 		echo "✅ cpp-tiktoken directory exists, skipping build"; \
 	fi
+
+$(DEPS_DIR)/download_tiktoken.sh:
+	@echo "📦 Creating download script..."
+	@mkdir -p $(DEPS_DIR)
+	@chmod +x $(DEPS_DIR)/download_tiktoken.sh
 
 $(DEPS_DIR)/$(COSMO_ZIP):
 	@mkdir -p $(DEPS_DIR)
