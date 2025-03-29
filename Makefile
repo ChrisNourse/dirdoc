@@ -31,7 +31,7 @@ OBJECTS = $(patsubst $(SRC_DIR)/%.c, $(BUILD_DIR)/%.o, $(SOURCES))
 DIRDOC_OBJ = $(BUILD_DIR)/dirdoc.o
 OTHER_OBJS = $(filter-out $(DIRDOC_OBJ), $(OBJECTS))
 
-.PHONY: all clean super_clean deps help test build_temp clean_temp
+.PHONY: all clean super_clean deps help test build_temp clean_temp samples
 
 all: deps $(BUILD_DIR)/dirdoc
 	@echo "✅ Build completed successfully"
@@ -107,6 +107,13 @@ super_clean:
 	rm -rf $(BUILD_DIR) $(DEPS_DIR)
 	@echo "✅ Clean complete"
 
+samples:
+	@echo "⏳ Creating sample project structure..."
+	@mkdir -p samples/sample_project/src samples/sample_project/docs samples/sample_project/tests
+	@chmod +x samples/run_sample.sh
+	@echo "✅ Sample project created in samples/sample_project"
+	@echo "🚀 Run './samples/run_sample.sh' to generate documentation for the sample"
+
 help:
 	@echo "Available targets:"
 	@echo "  all         - Build the dirdoc application"
@@ -116,5 +123,6 @@ help:
 	@echo "  test        - Build and run the test suite"
 	@echo "  build_temp  - Build the test binary for generating temp test files (without auto-cleanup)"
 	@echo "  clean_temp  - Remove all temporary test files from the 'tmp' directory"
+	@echo "  samples     - Create a sample project structure to demonstrate dirdoc"
 	@echo "  help        - Show this help message"
 	
