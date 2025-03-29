@@ -13,9 +13,9 @@ CFLAGS = -g -O2 -Ideps/cosmocc/include $(TIKTOKEN_INCLUDE)
 LDFLAGS = $(TIKTOKEN_LDFLAGS)
 
 # Tiktoken integration
-TIKTOKEN_DIR = $(DEPS_DIR)/tiktoken/install
-TIKTOKEN_INCLUDE = -I$(TIKTOKEN_DIR)/include -I$(DEPS_DIR)
-TIKTOKEN_LDFLAGS = -L$(TIKTOKEN_DIR)/lib -ltiktoken -lstdc++
+TIKTOKEN_DIR = $(DEPS_DIR)/tiktoken
+TIKTOKEN_INCLUDE = -I$(TIKTOKEN_DIR) -I$(DEPS_DIR)
+TIKTOKEN_LDFLAGS = -L$(TIKTOKEN_DIR)/build -ltiktoken -lstdc++
 
 # Cosmopolitan Libc 4.0.2 URLs
 COSMO_ZIP_URL = https://github.com/jart/cosmopolitan/releases/download/4.0.2/cosmocc-4.0.2.zip

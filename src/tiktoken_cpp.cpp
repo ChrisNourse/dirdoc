@@ -1,5 +1,5 @@
-// Try both possible include paths for flexibility
-#include <tiktoken/encoding.h>
+// Use a different include strategy
+#include "../deps/tiktoken/encoding.h"
 #include <string>
 #include <vector>
 #include <stdexcept>
@@ -47,11 +47,14 @@ int tiktoken_cpp_encode(TiktokenWrapper* wrapper, const char* text, size_t text_
             return -1;
         }
 
-        // Create a string view from the text (avoiding unnecessary copies)
-        std::string text_str(text, text_len);
+        // Create a string view from the text
+        std::string text_str;
+        if (text_len > 0) {
+            text_str.assign(text, text_len);
+        }
         
         // Encode the text
-        std::vector<tiktoken_token_t> tokens = wrapper->encoder->encode(text_str);
+        std::vector<int> tokens = wrapper->encoder->encode(text_str);
         
         // Allocate memory for the result
         *tokens_out = (tiktoken_token_t*)malloc(tokens.size() * sizeof(tiktoken_token_t));
