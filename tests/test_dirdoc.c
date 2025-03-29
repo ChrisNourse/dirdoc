@@ -5,6 +5,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <libgen.h>  // Add this line for basename declaration
+#include <ctype.h>   // For isalnum() and isspace()
 #ifdef _WIN32
 #include <windows.h>
 #endif
