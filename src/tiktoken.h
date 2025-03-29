@@ -1,12 +1,12 @@
 #ifndef TIKTOKEN_H
 #define TIKTOKEN_H
 
+#include <stddef.h>
+#include <stdbool.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include <stddef.h>
-#include <stdbool.h>
 
 typedef void* tiktoken_t;
 typedef int tiktoken_token_t;
