@@ -3,20 +3,12 @@
 #include <string.h>
 
 // Forward declaration of the C++ wrapper struct
-typedef struct TiktokenWrapper TiktokenWrapper;
+struct TiktokenWrapper;
 
-// Implementation in tiktoken_cpp.cpp
-#ifdef __cplusplus
-extern "C" {
-#endif
-
+// External functions implemented in tiktoken_cpp.cpp
 extern TiktokenWrapper* tiktoken_cpp_get_encoding(const char* encoding_name);
 extern int tiktoken_cpp_encode(TiktokenWrapper* wrapper, const char* text, size_t text_len, tiktoken_token_t** tokens_out);
 extern void tiktoken_cpp_free(TiktokenWrapper* wrapper);
-
-#ifdef __cplusplus
-}
-#endif
 
 tiktoken_t tiktoken_get_encoding(const char* encoding_name) {
     return (tiktoken_t)tiktoken_cpp_get_encoding(encoding_name);
