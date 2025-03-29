@@ -625,6 +625,9 @@ char* get_split_filename(const char *original_path, size_t part_number) {
  * @return int 0 on success, non-zero on failure.
  */
 int document_directory(const char *input_dir, const char *output_file, int flags) {
+    // Initialize tiktoken for token counting
+    init_tiktoken();
+    
     GitignoreList gitignore = {0};
     if (!(flags & IGNORE_GITIGNORE)) {
         load_gitignore(input_dir, &gitignore);
@@ -729,6 +732,10 @@ int document_directory(const char *input_dir, const char *output_file, int flags
     if (!output_file) {
         free(out_path);
     }
+    
+    // Cleanup tiktoken resources
+    cleanup_tiktoken();
+    
     return 0;
 }
 

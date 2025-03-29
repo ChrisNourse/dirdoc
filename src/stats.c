@@ -4,11 +4,40 @@
 #include <ctype.h>
 #include <sys/stat.h>
 #include "stats.h"
+#include "tiktoken.h"
+
+// Global tiktoken encoder instance
+static tiktoken_t encoder = NULL;
+
+/**
+ * @brief Initializes the tiktoken encoder
+ * 
+ * @return true if initialization succeeded
+ * @return false if initialization failed
+ */
+bool init_tiktoken() {
+    if (encoder == NULL) {
+        // Initialize with cl100k_base encoding (GPT-4/3.5-turbo encoding)
+        encoder = tiktoken_get_encoding("cl100k_base");
+        return (encoder != NULL);
+    }
+    return true;
+}
+
+/**
+ * @brief Frees the tiktoken encoder resources
+ */
+void cleanup_tiktoken() {
+    if (encoder != NULL) {
+        tiktoken_free(encoder);
+        encoder = NULL;
+    }
+}
 
 /**
  * @brief Calculates token and size statistics for the given string.
  *
- * Iterates through the string to count tokens (alphanumeric sequences or individual non-alphanumerics)
+ * Uses tiktoken to count tokens the same way LLMs like GPT-3.5/GPT-4 do,
  * and accumulates the total size in bytes.
  *
  * @param str The input string.
@@ -17,21 +46,59 @@
 void calculate_token_stats(const char *str, DocumentInfo *info) {
     size_t len = strlen(str);
     info->total_size += len;
-    size_t i = 0;
-    while (i < len) {
-        if (isspace((unsigned char)str[i])) {
-            i++;
-            continue;
-        }
-        if (isalnum((unsigned char)str[i]) || str[i] == '_') {
-            info->total_tokens++;
-            while (i < len && (isalnum((unsigned char)str[i]) || str[i] == '_')) {
+    
+    // Ensure the encoder is initialized
+    if (!init_tiktoken()) {
+        // Fallback to approximate calculation if tiktoken fails
+        size_t i = 0;
+        while (i < len) {
+            if (isspace((unsigned char)str[i])) {
+                i++;
+                continue;
+            }
+            if (isalnum((unsigned char)str[i]) || str[i] == '_') {
+                info->total_tokens++;
+                while (i < len && (isalnum((unsigned char)str[i]) || str[i] == '_')) {
+                    i++;
+                }
+            } else {
+                info->total_tokens++;
                 i++;
             }
-        } else {
-            info->total_tokens++;
-            i++;
         }
+        return;
+    }
+    
+    // Tokenize the string using tiktoken
+    tiktoken_token_t* tokens = NULL;
+    int count = tiktoken_encode(encoder, str, len, &tokens);
+    
+    // Update token count
+    if (count >= 0) {
+        info->total_tokens += (size_t)count;
+    } else {
+        // Fallback if encoding failed
+        size_t i = 0;
+        while (i < len) {
+            if (isspace((unsigned char)str[i])) {
+                i++;
+                continue;
+            }
+            if (isalnum((unsigned char)str[i]) || str[i] == '_') {
+                info->total_tokens++;
+                while (i < len && (isalnum((unsigned char)str[i]) || str[i] == '_')) {
+                    i++;
+                }
+            } else {
+                info->total_tokens++;
+                i++;
+            }
+        }
+    }
+    
+    // Free memory
+    if (tokens != NULL) {
+        free(tokens);
     }
 }
 

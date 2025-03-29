@@ -4,7 +4,18 @@
 #include <stdbool.h>
 #include "dirdoc.h"
 
+/* Initializes the tiktoken library for token counting.
+ * @return: true if initialization was successful, false otherwise.
+ */
+bool init_tiktoken(void);
+
+/* Cleans up tiktoken library resources.
+ * Should be called before program exit if init_tiktoken was called.
+ */
+void cleanup_tiktoken(void);
+
 /* Calculates token and size statistics for the given string and updates DocumentInfo.
+ * Uses tiktoken for more accurate token count that matches LLM behavior.
  * @param str: Input string.
  * @param info: Pointer to DocumentInfo to update.
  */
