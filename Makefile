@@ -9,14 +9,13 @@ TEST_DIR  = tests
 
 # Compiler and Flags
 CC = $(DEPS_DIR)/cosmocc/bin/cosmocc
-CFLAGS = -g -O2 -Ideps/cosmocc/include
-LDFLAGS = 
+CFLAGS = -g -O2 -Ideps/cosmocc/include $(TIKTOKEN_INCLUDE)
+LDFLAGS = $(TIKTOKEN_LDFLAGS)
 
 # Tiktoken integration
-# Note: This is a stub implementation. For proper integration, you'd update these paths
-TIKTOKEN_DIR = $(DEPS_DIR)/tiktoken
+TIKTOKEN_DIR = $(DEPS_DIR)/tiktoken/install
 TIKTOKEN_INCLUDE = -I$(TIKTOKEN_DIR)/include
-TIKTOKEN_LDFLAGS = -L$(TIKTOKEN_DIR)/lib -ltiktoken
+TIKTOKEN_LDFLAGS = -L$(TIKTOKEN_DIR)/lib -ltiktoken -lstdc++
 
 # Cosmopolitan Libc 4.0.2 URLs
 COSMO_ZIP_URL = https://github.com/jart/cosmopolitan/releases/download/4.0.2/cosmocc-4.0.2.zip
@@ -27,18 +26,23 @@ SOURCES = $(wildcard $(SRC_DIR)/*.c)
 # Object files: compile each source file into an object file in $(BUILD_DIR)
 OBJECTS = $(patsubst $(SRC_DIR)/%.c, $(BUILD_DIR)/%.o, $(SOURCES))
 
+# C++ compiler
+CXX = $(DEPS_DIR)/cosmocc/bin/cosmoc++
+
 # Ensure dirdoc.o is linked last (it provides get_default_output)
 DIRDOC_OBJ = $(BUILD_DIR)/dirdoc.o
-OTHER_OBJS = $(filter-out $(DIRDOC_OBJ), $(OBJECTS))
+CPP_SOURCES = $(SRC_DIR)/tiktoken_cpp.cpp
+CPP_OBJECTS = $(patsubst $(SRC_DIR)/%.cpp, $(BUILD_DIR)/%.o, $(CPP_SOURCES))
+OTHER_OBJS = $(filter-out $(DIRDOC_OBJ), $(OBJECTS)) $(CPP_OBJECTS)
 
-.PHONY: all clean super_clean deps help test build_temp clean_temp samples
+.PHONY: all clean super_clean deps help test build_temp clean_temp samples build_tiktoken
 
 all: deps $(BUILD_DIR)/dirdoc
 	@echo "✅ Build completed successfully"
 	@echo "📍 Binary location: $(BUILD_DIR)/dirdoc"
 	@echo "🚀 Run ./$(BUILD_DIR)/dirdoc --help for usage"
 
-deps: $(CC)
+deps: $(CC) build_tiktoken
 
 $(CC): $(DEPS_DIR)/$(COSMO_ZIP)
 	@echo "⏳ Checking cosmocc..."
@@ -47,9 +51,21 @@ $(CC): $(DEPS_DIR)/$(COSMO_ZIP)
 		mkdir -p $(DEPS_DIR)/cosmocc/bin; \
 		unzip -q $(DEPS_DIR)/$(COSMO_ZIP) -d $(DEPS_DIR)/cosmocc; \
 		chmod +x $(CC); \
-		echo "✅ Dependencies setup complete."; \
+		echo "✅ Cosmopolitan dependencies setup complete."; \
 	else \
 		echo "✅ cosmocc already exists, skipping unzip"; \
+	fi
+
+build_tiktoken:
+	@echo "⏳ Setting up tiktoken..."
+	@mkdir -p $(DEPS_DIR)
+	@if [ ! -d "$(TIKTOKEN_DIR)" ]; then \
+		echo "📦 Building cpp-tiktoken..."; \
+		chmod +x $(DEPS_DIR)/download_tiktoken.sh; \
+		$(DEPS_DIR)/download_tiktoken.sh; \
+		echo "✅ cpp-tiktoken built successfully."; \
+	else \
+		echo "✅ cpp-tiktoken directory exists, skipping build"; \
 	fi
 
 $(DEPS_DIR)/$(COSMO_ZIP):
@@ -68,6 +84,10 @@ $(BUILD_DIR):
 # Compile each source file into an object file.
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c | $(BUILD_DIR)
 	$(CC) $(CFLAGS) -c $< -o $@
+
+# Compile C++ files
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp | $(BUILD_DIR)
+	$(CXX) $(CFLAGS) -c $< -o $@
 
 # Link all object files together, ensuring dirdoc.o is last.
 $(BUILD_DIR)/dirdoc: $(OTHER_OBJS) $(DIRDOC_OBJ)
@@ -111,6 +131,7 @@ help:
 	@echo "Available targets:"
 	@echo "  all         - Build the dirdoc application"
 	@echo "  deps        - Download and set up dependencies"
+	@echo "  build_tiktoken - Build just the tiktoken library"
 	@echo "  clean       - Remove build artifacts"
 	@echo "  super_clean - Remove build artifacts and dependencies"
 	@echo "  test        - Build and run the test suite"
