@@ -1,5 +1,5 @@
-// Try to include the library
-#include "tiktoken/encoding.h"
+// Try both possible include paths for flexibility
+#include <tiktoken/encoding.h>
 #include <string>
 #include <vector>
 #include <stdexcept>
