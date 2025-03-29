@@ -101,14 +101,13 @@ $(DEPS_DIR)/download_tiktoken.sh:
 	@echo '# Create build directory' >> $(DEPS_DIR)/download_tiktoken.sh
 	@echo 'mkdir -p "$${TIKTOKEN_DIR}/build"' >> $(DEPS_DIR)/download_tiktoken.sh
 	@echo '' >> $(DEPS_DIR)/download_tiktoken.sh
-	@echo '# Build and install' >> $(DEPS_DIR)/download_tiktoken.sh
+	@echo '# Build library' >> $(DEPS_DIR)/download_tiktoken.sh
 	@echo 'cd "$${TIKTOKEN_DIR}/build"' >> $(DEPS_DIR)/download_tiktoken.sh
 	@echo 'echo "Building cpp-tiktoken..."' >> $(DEPS_DIR)/download_tiktoken.sh
-	@echo 'cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$${TIKTOKEN_DIR}/install"' >> $(DEPS_DIR)/download_tiktoken.sh
+	@echo 'cmake .. -DCMAKE_BUILD_TYPE=Release' >> $(DEPS_DIR)/download_tiktoken.sh
 	@echo 'make -j$$(nproc)' >> $(DEPS_DIR)/download_tiktoken.sh
-	@echo 'make install' >> $(DEPS_DIR)/download_tiktoken.sh
 	@echo '' >> $(DEPS_DIR)/download_tiktoken.sh
-	@echo 'echo "cpp-tiktoken has been built and installed to $${TIKTOKEN_DIR}/install"' >> $(DEPS_DIR)/download_tiktoken.sh
+	@echo 'echo "cpp-tiktoken has been built in $${TIKTOKEN_DIR}/build"' >> $(DEPS_DIR)/download_tiktoken.sh
 	@chmod +x $(DEPS_DIR)/download_tiktoken.sh
 
 $(DEPS_DIR)/$(COSMO_ZIP):
