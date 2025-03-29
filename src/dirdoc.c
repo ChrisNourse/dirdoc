@@ -31,7 +31,8 @@ static void print_help() {
            "  dirdoc -sp -l 10 /path/to/dir\n"
            "  dirdoc --include-git /path/to/dir\n"
            "  dirdoc --ignore \"*.tmp\" /path/to/dir\n"
-           "  dirdoc --ignore \"*.log\" --ignore \"secret.txt\" /path/to/dir\n");
+           "  dirdoc --ignore \"*.log\" --ignore \"secret.txt\" /path/to/dir\n"
+           "  dirdoc --ignore \"temp/\" /path/to/dir          # Ignore the entire temp directory\n");
 }
 
 #ifndef UNIT_TEST

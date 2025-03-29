@@ -561,6 +561,76 @@ void test_is_binary_file() {
     printf("✔ test_ignore_extra_patterns_with_ngi passed\n");
 }
 
+/* Test that the --ignore option works with directories.
+ * This test creates a temporary directory with a subdirectory,
+ * then uses extra_ignore_patterns to ignore the subdirectory.
+ */
+void test_ignore_directory() {
+    char *temp_dir = create_temp_dir();
+    
+    // Create a subdirectory that we will explicitly ignore
+    char subdir_path[MAX_PATH_LEN];
+    snprintf(subdir_path, sizeof(subdir_path), "%s/ignore_me", temp_dir);
+    if (mkdir(subdir_path, 0755) != 0) {
+        perror("mkdir subdir");
+        exit(EXIT_FAILURE);
+    }
+    
+    // Add a file in the main directory and the subdirectory
+    create_file(temp_dir, "main_file.txt", "This file should be included");
+    create_file(subdir_path, "sub_file.txt", "This file should be ignored");
+    
+    char output_file[MAX_PATH_LEN];
+    snprintf(output_file, sizeof(output_file), "%s/%s", temp_dir, "test_ignore_dir.md");
+    
+    // Set up to ignore the "ignore_me/" directory
+    char *patterns[1] = {"ignore_me/"};
+    set_extra_ignore_patterns(patterns, 1);
+    
+    int ret = document_directory(temp_dir, output_file, 0);
+    // Clean up the extra patterns
+    free_extra_ignore_patterns();
+    
+    // Check that the output file exists
+    if (access(output_file, F_OK) != 0) {
+        printf("Warning: Output file '%s' does not exist\n", output_file);
+        return;
+    }
+    
+    // Read the output file
+    FILE *f = fopen(output_file, "r");
+    if (!f) {
+        perror("Error opening output file");
+        return;
+    }
+    
+    fseek(f, 0, SEEK_END);
+    long fsize = ftell(f);
+    fseek(f, 0, SEEK_SET);
+    char *content = malloc(fsize + 1);
+    fread(content, 1, fsize, f);
+    content[fsize] = '\0';
+    fclose(f);
+    
+    // Verify that main_file.txt is mentioned but nothing about ignore_me/ directory
+    assert(strstr(content, "main_file.txt") != NULL);
+    assert(strstr(content, "ignore_me") == NULL);
+    assert(strstr(content, "sub_file.txt") == NULL);
+    
+    free(content);
+    remove(output_file);
+    
+#ifndef INSPECT_TEMP
+    if (remove_directory_recursive(temp_dir) == 0) {
+        printf("Folder '%s' removed successfully.\n", temp_dir);
+    } else {
+        printf("Failed to remove folder '%s'.\n", temp_dir);
+    }
+#endif
+    free(temp_dir);
+    printf("✔ test_ignore_directory passed\n");
+}
+
 /* Main test runner */
 void test_smart_split();
 
@@ -576,6 +646,7 @@ int main(void) {
     test_stats();
     test_is_binary_file();
     test_ignore_extra_patterns_with_ngi();
+    test_ignore_directory();
     printf("✅ All tests passed!\n");
 
     // Attempt to remove the local "tmp" folder if it is empty.
