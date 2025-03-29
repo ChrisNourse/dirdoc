@@ -12,10 +12,9 @@ CC = $(DEPS_DIR)/cosmocc/bin/cosmocc
 CFLAGS = -g -O2 -Ideps/cosmocc/include $(TIKTOKEN_INCLUDE)
 LDFLAGS = $(TIKTOKEN_LDFLAGS)
 
-# Tiktoken integration
-TIKTOKEN_DIR = $(DEPS_DIR)/tiktoken
-TIKTOKEN_INCLUDE = -I$(TIKTOKEN_DIR) -I$(DEPS_DIR)
-TIKTOKEN_LDFLAGS = -L$(TIKTOKEN_DIR)/build -ltiktoken -lstdc++
+# Tiktoken integration (using our own implementation)
+TIKTOKEN_INCLUDE = -I$(SRC_DIR)
+TIKTOKEN_LDFLAGS = -lstdc++
 
 # Cosmopolitan Libc 4.0.2 URLs
 COSMO_ZIP_URL = https://github.com/jart/cosmopolitan/releases/download/4.0.2/cosmocc-4.0.2.zip
@@ -42,7 +41,7 @@ all: deps $(BUILD_DIR)/dirdoc
 	@echo "📍 Binary location: $(BUILD_DIR)/dirdoc"
 	@echo "🚀 Run ./$(BUILD_DIR)/dirdoc --help for usage"
 
-deps: $(CC) build_tiktoken
+deps: $(CC)
 
 $(CC): $(DEPS_DIR)/$(COSMO_ZIP)
 	@echo "⏳ Checking cosmocc..."
@@ -56,20 +55,11 @@ $(CC): $(DEPS_DIR)/$(COSMO_ZIP)
 		echo "✅ cosmocc already exists, skipping unzip"; \
 	fi
 
-build_tiktoken: $(DEPS_DIR)/download_tiktoken.sh
-	@echo "⏳ Setting up tiktoken..."
-	@mkdir -p $(DEPS_DIR)
-	@if [ ! -d "$(TIKTOKEN_DIR)" ]; then \
-		echo "📦 Building cpp-tiktoken..."; \
-		$(DEPS_DIR)/download_tiktoken.sh; \
-		echo "✅ cpp-tiktoken built successfully."; \
-	else \
-		echo "✅ cpp-tiktoken directory exists, skipping build"; \
-	fi
+build_tiktoken:
+	@echo "⏳ Using built-in tiktoken implementation..."
+	@echo "✅ Built-in tiktoken implementation ready"
 
-$(DEPS_DIR)/download_tiktoken.sh:
-	@echo "📦 Creating download script..."
-	@mkdir -p $(DEPS_DIR)
+# Nothing needed for our implementation
 	@echo '#!/bin/bash' > $(DEPS_DIR)/download_tiktoken.sh
 	@echo '' >> $(DEPS_DIR)/download_tiktoken.sh
 	@echo '# Script to download and build cpp-tiktoken' >> $(DEPS_DIR)/download_tiktoken.sh
