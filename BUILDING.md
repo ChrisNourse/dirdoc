@@ -20,9 +20,29 @@ Before creating a release:
   make test
   ```
 
-### 2. Create and Push a Version Tag
+### 2. Semantic Versioning with Pull Requests
 
-The GitHub workflow is triggered when a tag with a version number format (e.g., `1.0.0`, `v1.2.3`) is pushed to the repository:
+The project uses semantic versioning and automates version tag creation through Pull Requests:
+
+- **major version**: Breaking changes (1.0.0 → 2.0.0)
+- **minor version**: New features, non-breaking (1.0.0 → 1.1.0)
+- **patch version**: Bug fixes, small improvements (1.0.0 → 1.0.1)
+
+#### How it works:
+
+1. When creating a Pull Request, add **one** of these labels:
+   - `major` - For breaking changes
+   - `minor` - For new features
+   - `patch` - For bug fixes
+
+2. When the PR is merged to the main branch, a GitHub Actions workflow automatically:
+   - Determines the next version number based on the PR label
+   - Creates and pushes a new version tag
+   - Triggers the release workflow
+
+#### Manual tagging (if needed):
+
+If you need to manually create a tag, you can still use:
 
 ```bash
 # 1. Create the tag locally (choose an appropriate version number)

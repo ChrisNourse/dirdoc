@@ -1,0 +1,36 @@
+name: Enforce Version Labels
+
+on:
+  pull_request:
+    types: [opened, labeled, unlabeled, synchronize]
+    branches:
+      - main
+
+jobs:
+  check-labels:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check for required version label
+        id: check-labels
+        run: |
+          LABELS="${{ toJson(github.event.pull_request.labels.*.name) }}"
+          MAJOR_LABEL=$(echo $LABELS | grep -o '"major"' || echo "")
+          MINOR_LABEL=$(echo $LABELS | grep -o '"minor"' || echo "")
+          PATCH_LABEL=$(echo $LABELS | grep -o '"patch"' || echo "")
+          
+          VERSION_LABELS_COUNT=0
+          if [ ! -z "$MAJOR_LABEL" ]; then ((VERSION_LABELS_COUNT++)); fi
+          if [ ! -z "$MINOR_LABEL" ]; then ((VERSION_LABELS_COUNT++)); fi
+          if [ ! -z "$PATCH_LABEL" ]; then ((VERSION_LABELS_COUNT++)); fi
+          
+          if [ $VERSION_LABELS_COUNT -eq 0 ]; then
+            echo "❌ Error: No version label found"
+            echo "This PR requires exactly one version label: 'major', 'minor', or 'patch'"
+            exit 1
+          elif [ $VERSION_LABELS_COUNT -gt 1 ]; then
+            echo "❌ Error: Multiple version labels found"
+            echo "This PR should have exactly one version label: 'major', 'minor', or 'patch'"
+            exit 1
+          else
+            echo "✅ Version label check passed"
+          fi

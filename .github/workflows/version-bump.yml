@@ -1,0 +1,98 @@
+name: Version Bump
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - main
+
+jobs:
+  version-bump:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Check for version label
+        id: check-labels
+        run: |
+          LABELS="${{ toJson(github.event.pull_request.labels.*.name) }}"
+          if [[ $LABELS == *"major"* ]] || [[ $LABELS == *"minor"* ]] || [[ $LABELS == *"patch"* ]]; then
+            echo "Version label found."
+            echo "::set-output name=has_label::true"
+          else
+            echo "No version label found on this PR. Skipping version bump."
+            echo "::set-output name=has_label::false"
+          fi
+      
+      - name: Checkout code
+        if: steps.check-labels.outputs.has_label == 'true'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Need full history to get tags
+          token: ${{ secrets.RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
+          
+      - name: Determine version bump
+        if: steps.check-labels.outputs.has_label == 'true'
+        id: bump
+        run: |
+          # Get latest version tag
+          LATEST_TAG=$(git tag -l '[0-9]*.[0-9]*.[0-9]*' | sort -V | tail -n1)
+          if [ -z "$LATEST_TAG" ]; then
+            LATEST_TAG="0.0.0"
+          fi
+          echo "Current version: $LATEST_TAG"
+          
+          # Remove 'v' prefix if present
+          VERSION=${LATEST_TAG#v}
+          
+          # Split version into components
+          IFS='.' read -r -a VERSION_PARTS <<< "$VERSION"
+          MAJOR="${VERSION_PARTS[0]}"
+          MINOR="${VERSION_PARTS[1]}"
+          PATCH="${VERSION_PARTS[2]}"
+          
+          # Check PR labels to determine bump type
+          if [[ ${{ contains(github.event.pull_request.labels.*.name, 'major') }} == true ]]; then
+            BUMP_TYPE="major"
+            NEW_VERSION="$((MAJOR + 1)).0.0"
+          elif [[ ${{ contains(github.event.pull_request.labels.*.name, 'minor') }} == true ]]; then
+            BUMP_TYPE="minor"
+            NEW_VERSION="${MAJOR}.$((MINOR + 1)).0"
+          else
+            # Default to patch if no label or has patch label
+            BUMP_TYPE="patch"
+            NEW_VERSION="${MAJOR}.${MINOR}.$((PATCH + 1))"
+          fi
+          
+          echo "::set-output name=bump_type::${BUMP_TYPE}"
+          echo "::set-output name=next_version::${NEW_VERSION}"
+          echo "Next version should be: ${NEW_VERSION} (${BUMP_TYPE} bump)"
+          
+      - name: Create and Push Tag
+        if: steps.check-labels.outputs.has_label == 'true'
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          
+          NEW_VERSION="${{ steps.bump.outputs.next_version }}"
+          
+          git tag $NEW_VERSION
+          git push origin $NEW_VERSION
+          
+          echo "Created and pushed tag: $NEW_VERSION"
+          
+      - name: Create GitHub Comment
+        if: steps.check-labels.outputs.has_label == 'true'
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{secrets.GITHUB_TOKEN}}
+          script: |
+            const bumpType = '${{ steps.bump.outputs.bump_type }}';
+            const nextVersion = '${{ steps.bump.outputs.next_version }}';
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## Version Bump Completed 🚀\n\nBased on this PR's \`${bumpType}\` label, a new release version **${nextVersion}** has been created and tagged automatically.\n\nThe release workflow has been triggered to build and publish the release assets.`
+            });
