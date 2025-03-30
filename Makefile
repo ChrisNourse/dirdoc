@@ -67,7 +67,7 @@ TEST_TIKTOKEN_OBJ = $(patsubst %.c, $(BUILD_DIR)/test_%.o, $(TEST_TIKTOKEN_SRCS)
 TIKTOKEN_TEST_DEPS = $(BUILD_DIR)/tiktoken.o $(BUILD_DIR)/stats.o $(BUILD_DIR)/tiktoken_cpp.o
 
 
-.PHONY: all clean super_clean deps deps_cosmo help test build_temp clean_temp samples test_tiktoken tools
+.PHONY: all clean super_clean deps deps_cosmo help test build_temp clean_temp test_tiktoken tools
 
 # Main build target depends on the final binary
 all: $(BUILD_DIR)/dirdoc
@@ -222,5 +222,4 @@ help:
 	@echo "  test        - Build and run the test suite"
 	@echo "  build_temp  - Build the test binary for generating temp test files (without auto-cleanup)"
 	@echo "  clean_temp  - Remove all temporary test files from the 'tmp' directory"
-	@echo "  samples     - Create a sample project structure to demonstrate dirdoc"
 	@echo "  help        - Show this help message"
