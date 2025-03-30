@@ -1,8 +1,20 @@
 # dirdoc
 
-<img src="dirdoc_logo.png" alt="drawing" width="200"/>
+<table>
+  <tr>
+    <td style="width: 200px; vertical-align: top;">
+      <img src="dirdoc_logo.png" width="100%">
+    </td>
+    <td style="text-align: left; vertical-align: middle;">
+dirdoc (directory documentor) is a command-line tool designed to quickly and easily package an entire codebase into a single (or multiple) Markdown file.
+<br>
+<br>
+This packaged document includes a comprehensive directory structure, file contents with syntax highlighting, and token/size statistics. It is especially useful for providing entire codebases to LLMs for analysis, bug fixing, or feature enhancements.
+    </td>
+  </tr>
+</table>
 
-dirdoc (directory documentor) is a command-line tool designed to quickly and easily package an entire codebase into a single (or multiple) Markdown file. This packaged document includes a comprehensive directory structure, file contents with syntax highlighting, and token/size statistics. It is especially useful for providing entire codebases to LLMs for analysis, bug fixing, or feature enhancements.
+<div style="clear: both;"></div>
 
 ## Features
 
