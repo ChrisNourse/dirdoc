@@ -86,3 +86,10 @@ void test_smart_split() {
     printf("✔ test_smart_split passed\n");
 }
 
+// Run function for the split tests
+void run_split_tests() {
+    printf("Running split tests...\n");
+    test_smart_split();
+    printf("All split tests passed!\n");
+}
+

@@ -18,8 +18,8 @@
 #include "writer.h"
 
 void test_smart_split();
-void test_tiktoken();
-
+void run_tiktoken_tests();
+void run_split_tests();
 
 #ifndef MAX_PATH_LEN
 #define MAX_PATH_LEN 4096
@@ -679,8 +679,6 @@ void test_ignore_directory() {
 }
 
 /* Main test runner */
-void test_smart_split();
-
 int main(void) {
     printf("Running tests for dirdoc...\n");
     test_get_default_output();
@@ -691,10 +689,14 @@ int main(void) {
     test_compare_entries();
     test_scan_directory();
     test_stats();
-    test_tiktoken();  // Add the new tiktoken test
     test_is_binary_file();
     test_ignore_extra_patterns_with_ngi();
     test_ignore_directory();
+    
+    // Run tests from other files
+    run_tiktoken_tests();
+    run_split_tests();
+    
     printf("✅ All tests passed!\n");
 
     // Attempt to remove the local "tmp" folder if it is empty.

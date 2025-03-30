@@ -57,12 +57,12 @@ void test_token_counting() {
     printf("✅ Token counting test passed\n");
 }
 
-int main() {
+// Main function moved to test_dirdoc.c
+void run_tiktoken_tests() {
     printf("Running tiktoken tests...\n");
     
     test_tiktoken_init();
     test_token_counting();
     
     printf("All tiktoken tests passed!\n");
-    return 0;
 }
