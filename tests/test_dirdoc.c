@@ -20,6 +20,7 @@
 void test_smart_split();
 void run_tiktoken_tests();
 void run_split_tests();
+int run_file_deletion_tests(void);
 
 #ifndef MAX_PATH_LEN
 #define MAX_PATH_LEN 4096
@@ -702,6 +703,7 @@ int main(int argc, char *argv[]) {
     // Run tests from other files
     run_tiktoken_tests();
     run_split_tests();
+    run_file_deletion_tests();
     
     printf("✅ All tests passed!\n");
 

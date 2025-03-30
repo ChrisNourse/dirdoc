@@ -62,6 +62,9 @@ TEST_LINK_OBJS = $(OBJECTS) $(MAIN_CPP_OBJECTS) $(TEST_OBJECTS)
 TEST_SOURCES = $(wildcard $(TEST_DIR)/*.c)
 TEST_OBJECTS = $(patsubst $(TEST_DIR)/%.c, $(BUILD_DIR)/test_%.o, $(TEST_SOURCES))
 
+# File deletion test specific objects
+TEST_FILE_DELETION_OBJ = $(BUILD_DIR)/test_test_file_deletion.o
+
 # Test-specific flags
 TEST_CFLAGS = -DUNIT_TEST -I. -I$(SRC_DIR) -I$(TEST_DIR) -Ideps/cosmocc/include
 
@@ -91,6 +94,7 @@ ensure_dirs:
 	@mkdir -p $(DEPS_DIR)
 	@mkdir -p $(TIKTOKEN_DATA_DIR)
 	@mkdir -p $(DEPS_DIR)/cosmocc/bin
+	@mkdir -p $(TEST_DIR)/test_data
 
 # Cosmopolitan dependency target
 deps_cosmo: ensure_dirs $(CC)
@@ -193,6 +197,14 @@ $(BUILD_DIR)/tiktoken_cpp.o: $(SRC_DIR)/tiktoken_cpp.cpp $(TIKTOKEN_GENERATED_HE
 $(BUILD_DIR)/test_%.o: $(TEST_DIR)/%.c deps
 	$(CC) $(CFLAGS) $(TEST_CFLAGS) -c $< -o $@
 
+# Compile file deletion test separately
+$(BUILD_DIR)/test_test_file_deletion.o: $(TEST_DIR)/test_file_deletion.c deps
+	$(CC) $(CFLAGS) $(TEST_CFLAGS) -c $< -o $@
+
+# Compile file deletion test for standalone use
+$(BUILD_DIR)/test_test_file_deletion_standalone.o: $(TEST_DIR)/test_file_deletion.c deps
+	$(CC) $(CFLAGS) $(TEST_CFLAGS) -DFILE_DELETION_STANDALONE -c $< -o $@
+
 # Link all object files together for the main executable, ensuring dirdoc.o is last.
 # Make sure the generated header exists before linking.
 $(BUILD_DIR)/dirdoc: $(DIRDOC_LINK_OBJS) $(DIRDOC_OBJ) deps
@@ -210,10 +222,21 @@ $(BUILD_DIR)/dirdoc_test: $(filter-out $(BUILD_DIR)/dirdoc.o, $(OBJECTS)) $(BUIL
 	$(CXX) $(LDFLAGS) -o $@ $(filter-out $(TIKTOKEN_GENERATED_HEADER), $(filter-out deps, $^))
 	@echo "✅ Test link complete"
 
+# Build file deletion test executable
+$(BUILD_DIR)/test_file_deletion: $(BUILD_DIR)/test_test_file_deletion_standalone.o $(filter-out $(BUILD_DIR)/dirdoc.o, $(OBJECTS)) $(BUILD_DIR)/dirdoc_test.o $(MAIN_CPP_OBJECTS)
+	@echo "⏳ Linking file deletion test executable..."
+	$(CXX) $(LDFLAGS) -o $@ $(filter-out $(TIKTOKEN_GENERATED_HEADER), $(filter-out deps, $^))
+	@echo "✅ File deletion test link complete"
+
 # Build and run the main tests - don't force 'all' to run, but ensure dependencies are available
 test: deps $(BUILD_DIR)/dirdoc_test
 	@echo "🚀 Running main tests..."
 	./$(BUILD_DIR)/dirdoc_test
+
+# Add a separate target for file deletion tests
+test_file_deletion: deps $(BUILD_DIR)/test_file_deletion
+	@echo "🚀 Running file deletion tests..."
+	./$(BUILD_DIR)/test_file_deletion
 
 clean:
 	@echo "⏳ Cleaning build artifacts..."
