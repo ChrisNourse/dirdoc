@@ -4,6 +4,77 @@ This document provides instructions on how to build, test, and maintain the dird
 
 ---
 
+## Creating a Release
+
+The project is configured with GitHub Actions to automatically build and publish releases when you push a version tag. Here's how to create a new release:
+
+### 1. Ensure Everything is Ready
+
+Before creating a release:
+
+- Make sure all desired changes are committed and pushed to the main branch.
+- Verify that the code builds and tests pass locally:
+  ```bash
+  make clean
+  make all
+  make test
+  ```
+
+### 2. Semantic Versioning with Pull Requests
+
+The project uses semantic versioning and automates version tag creation through Pull Requests:
+
+- **major version**: Breaking changes (1.0.0 → 2.0.0)
+- **minor version**: New features, non-breaking (1.0.0 → 1.1.0)
+- **patch version**: Bug fixes, small improvements (1.0.0 → 1.0.1)
+
+#### How it works:
+
+1. When creating a Pull Request, add **one** of these labels:
+   - `major` - For breaking changes
+   - `minor` - For new features
+   - `patch` - For bug fixes
+
+2. When the PR is merged to the main branch, a GitHub Actions workflow automatically:
+   - Determines the next version number based on the PR label
+   - Creates and pushes a new version tag
+   - Triggers the release workflow
+
+#### Manual tagging (if needed):
+
+If you need to manually create a tag, you can still use:
+
+```bash
+# 1. Create the tag locally (choose an appropriate version number)
+git tag 1.0.0
+
+# 2. Push the tag to GitHub
+git push origin 1.0.0
+```
+
+### 3. Monitor the Release Process
+
+After pushing the tag:
+
+1. GitHub Actions will automatically start the release workflow
+2. The workflow will:
+   - Build the project
+   - Create a release binary for Linux/macOS
+   - Create a Windows-compatible .exe file
+   - Create a GitHub Release with these binaries attached
+
+You can monitor the progress of the workflow in the "Actions" tab of your GitHub repository.
+
+### 4. Verify the Release
+
+Once the workflow completes successfully:
+
+1. Go to the "Releases" section of your GitHub repository
+2. Verify that the new release appears with the correct version number
+3. Confirm that both the `dirdoc` and `dirdoc.exe` binaries are attached to the release
+
+---
+
 ## Prerequisites
 
 Before building the project, ensure that your environment has the following:

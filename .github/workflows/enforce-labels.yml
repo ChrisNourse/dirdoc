@@ -1,0 +1,37 @@
+name: Enforce Version Labels
+
+on:
+  pull_request:
+    types: [opened, labeled, unlabeled, synchronize]
+    branches:
+      - main
+
+jobs:
+  check-labels:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check for required version label
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const labels = context.payload.pull_request.labels.map(label => label.name);
+            console.log("All PR labels:", labels);
+            
+            const versionLabels = ['major', 'minor', 'patch'];
+            const foundLabels = versionLabels.filter(label => 
+              labels.some(prLabel => prLabel.toLowerCase() === label.toLowerCase())
+            );
+            
+            console.log("Found version labels:", foundLabels);
+            
+            if (foundLabels.length === 0) {
+              core.setFailed("❌ Error: No version label found. This PR requires exactly one version label: 'major', 'minor', or 'patch'");
+              return;
+            }
+            
+            if (foundLabels.length > 1) {
+              core.setFailed("❌ Error: Multiple version labels found. This PR should have exactly one version label: 'major', 'minor', or 'patch'");
+              return;
+            }
+            
+            console.log("✅ Version label check passed. PR has the required single version label:", foundLabels[0]);
