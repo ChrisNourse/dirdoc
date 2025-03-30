@@ -29,6 +29,9 @@ int test_delete_existing_file() {
     mkdir("./tests", 0755);
     mkdir(test_dir, 0755);
     
+    // Create a dummy documentation file in the directory to be documented
+    create_test_file("./tests/test_data/sample.txt", "This is a sample file to document");
+    
     // Create a file to test deletion
     assert(create_test_file(output_file, "# This is existing content that should be deleted\n"));
     assert(access(output_file, F_OK) == 0); // File should exist
@@ -55,6 +58,7 @@ int test_delete_existing_file() {
     
     // Clean up
     remove(output_file);
+    remove("./tests/test_data/sample.txt");
     
     printf("✓ test_delete_existing_file passed\n");
     return 0;
