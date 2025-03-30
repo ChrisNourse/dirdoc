@@ -12,9 +12,10 @@ CC = $(DEPS_DIR)/cosmocc/bin/cosmocc
 CFLAGS = -g -O2 -Ideps/cosmocc/include $(TIKTOKEN_INCLUDE)
 LDFLAGS = $(TIKTOKEN_LDFLAGS)
 
-# Tiktoken integration (using our own implementation)
+# Tiktoken integration (using OpenAI's embedding data)
 TIKTOKEN_INCLUDE = -I$(SRC_DIR)
 TIKTOKEN_LDFLAGS = -lstdc++
+TIKTOKEN_DATA_FILE = $(SRC_DIR)/tiktoken_data.h
 
 # Cosmopolitan Libc 4.0.2 URLs
 COSMO_ZIP_URL = https://github.com/jart/cosmopolitan/releases/download/4.0.2/cosmocc-4.0.2.zip
@@ -34,9 +35,9 @@ CPP_SOURCES = $(SRC_DIR)/tiktoken_cpp.cpp
 CPP_OBJECTS = $(patsubst $(SRC_DIR)/%.cpp, $(BUILD_DIR)/%.o, $(CPP_SOURCES))
 OTHER_OBJS = $(filter-out $(DIRDOC_OBJ), $(OBJECTS)) $(CPP_OBJECTS)
 
-.PHONY: all clean super_clean deps help test build_temp clean_temp samples build_tiktoken
+.PHONY: all clean super_clean deps help test build_temp clean_temp samples tiktoken
 
-all: deps $(BUILD_DIR)/dirdoc
+all: deps tiktoken $(BUILD_DIR)/dirdoc
 	@echo "✅ Build completed successfully"
 	@echo "📍 Binary location: $(BUILD_DIR)/dirdoc"
 	@echo "🚀 Run ./$(BUILD_DIR)/dirdoc --help for usage"
@@ -55,50 +56,25 @@ $(CC): $(DEPS_DIR)/$(COSMO_ZIP)
 		echo "✅ cosmocc already exists, skipping unzip"; \
 	fi
 
-build_tiktoken:
-	@echo "⏳ Using built-in tiktoken implementation..."
-	@echo "✅ Built-in tiktoken implementation ready"
+tiktoken: $(TIKTOKEN_DATA_FILE)
 
-# Nothing needed for our implementation
-	@echo '#!/bin/bash' > $(DEPS_DIR)/download_tiktoken.sh
-	@echo '' >> $(DEPS_DIR)/download_tiktoken.sh
-	@echo '# Script to download and build cpp-tiktoken' >> $(DEPS_DIR)/download_tiktoken.sh
-	@echo '' >> $(DEPS_DIR)/download_tiktoken.sh
-	@echo 'set -e' >> $(DEPS_DIR)/download_tiktoken.sh
-	@echo '' >> $(DEPS_DIR)/download_tiktoken.sh
-	@echo 'SCRIPT_DIR="$$(cd "$$(dirname "$${BASH_SOURCE[0]}")" && pwd)"' >> $(DEPS_DIR)/download_tiktoken.sh
-	@echo 'TIKTOKEN_DIR="$${SCRIPT_DIR}/tiktoken"' >> $(DEPS_DIR)/download_tiktoken.sh
-	@echo 'TIKTOKEN_REPO="https://github.com/gh-markt/cpp-tiktoken.git"' >> $(DEPS_DIR)/download_tiktoken.sh
-	@echo 'PCRE2_DIR="$${TIKTOKEN_DIR}/pcre2"' >> $(DEPS_DIR)/download_tiktoken.sh
-	@echo '' >> $(DEPS_DIR)/download_tiktoken.sh
-	@echo '# Create directory if it doesn'"'"'t exist' >> $(DEPS_DIR)/download_tiktoken.sh
-	@echo 'mkdir -p "$${TIKTOKEN_DIR}"' >> $(DEPS_DIR)/download_tiktoken.sh
-	@echo '' >> $(DEPS_DIR)/download_tiktoken.sh
-	@echo '# Clone the repository if it doesn'"'"'t exist' >> $(DEPS_DIR)/download_tiktoken.sh
-	@echo 'if [ ! -d "$${TIKTOKEN_DIR}/.git" ]; then' >> $(DEPS_DIR)/download_tiktoken.sh
-	@echo '    echo "Cloning cpp-tiktoken repository..."' >> $(DEPS_DIR)/download_tiktoken.sh
-	@echo '    rm -rf "$${TIKTOKEN_DIR}"' >> $(DEPS_DIR)/download_tiktoken.sh
-	@echo '    git clone "$${TIKTOKEN_REPO}" "$${TIKTOKEN_DIR}"' >> $(DEPS_DIR)/download_tiktoken.sh
-	@echo 'else' >> $(DEPS_DIR)/download_tiktoken.sh
-	@echo '    echo "cpp-tiktoken repository already exists, updating..."' >> $(DEPS_DIR)/download_tiktoken.sh
-	@echo '    cd "$${TIKTOKEN_DIR}" && git pull' >> $(DEPS_DIR)/download_tiktoken.sh
-	@echo 'fi' >> $(DEPS_DIR)/download_tiktoken.sh
-	@echo '' >> $(DEPS_DIR)/download_tiktoken.sh
-	@echo '# Initialize and update submodules' >> $(DEPS_DIR)/download_tiktoken.sh
-	@echo 'echo "Initializing and updating submodules..."' >> $(DEPS_DIR)/download_tiktoken.sh
-	@echo 'cd "$${TIKTOKEN_DIR}" && git submodule update --init --recursive' >> $(DEPS_DIR)/download_tiktoken.sh
-	@echo '' >> $(DEPS_DIR)/download_tiktoken.sh
-	@echo '# Create build directory' >> $(DEPS_DIR)/download_tiktoken.sh
-	@echo 'mkdir -p "$${TIKTOKEN_DIR}/build"' >> $(DEPS_DIR)/download_tiktoken.sh
-	@echo '' >> $(DEPS_DIR)/download_tiktoken.sh
-	@echo '# Build library' >> $(DEPS_DIR)/download_tiktoken.sh
-	@echo 'cd "$${TIKTOKEN_DIR}/build"' >> $(DEPS_DIR)/download_tiktoken.sh
-	@echo 'echo "Building cpp-tiktoken..."' >> $(DEPS_DIR)/download_tiktoken.sh
-	@echo 'cmake .. -DCMAKE_BUILD_TYPE=Release' >> $(DEPS_DIR)/download_tiktoken.sh
-	@echo 'make -j$$(nproc)' >> $(DEPS_DIR)/download_tiktoken.sh
-	@echo '' >> $(DEPS_DIR)/download_tiktoken.sh
-	@echo 'echo "cpp-tiktoken has been built in $${TIKTOKEN_DIR}/build"' >> $(DEPS_DIR)/download_tiktoken.sh
-	@chmod +x $(DEPS_DIR)/download_tiktoken.sh
+$(TIKTOKEN_DATA_FILE):
+	@echo "⏳ Setting up OpenAI tiktoken data extraction..."
+	@mkdir -p $(DEPS_DIR)
+	@mkdir -p $(SRC_DIR)/tiktoken_data
+	@if ! command -v python3 &> /dev/null; then \
+		echo "❌ Python 3 is required for tiktoken data extraction"; \
+		exit 1; \
+	fi
+	@if ! python3 -c "import tiktoken" &> /dev/null; then \
+		echo "⏳ Installing tiktoken Python package..."; \
+		pip install tiktoken; \
+	fi
+	@echo "⏳ Extracting OpenAI tiktoken data..."
+	@python3 src/extract_tiktoken_data.py
+	@echo "⏳ Generating C header from tiktoken data..."
+	@python3 src/convert_to_c_header.py
+	@echo "✅ OpenAI tiktoken data extraction complete"
 
 $(DEPS_DIR)/$(COSMO_ZIP):
 	@mkdir -p $(DEPS_DIR)
@@ -163,7 +139,7 @@ help:
 	@echo "Available targets:"
 	@echo "  all         - Build the dirdoc application"
 	@echo "  deps        - Download and set up dependencies"
-	@echo "  build_tiktoken - Build just the tiktoken library"
+	@echo "  tiktoken    - Extract OpenAI tiktoken data and generate headers"
 	@echo "  clean       - Remove build artifacts"
 	@echo "  super_clean - Remove build artifacts and dependencies"
 	@echo "  test        - Build and run the test suite"

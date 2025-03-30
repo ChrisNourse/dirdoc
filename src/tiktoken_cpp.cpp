@@ -1,109 +1,302 @@
-// Include the library directly - we need to manually locate it
 #include <stdio.h>
 #include <vector>
 #include <string>
-#include <memory>
+#include <unordered_map>
 #include <map>
-#include <stdexcept>
+#include <algorithm>
+#include <memory>
 #include <cstring>
 #include <cctype>
+#include <cstdlib>
+#include <fstream>
+#include <iostream>
+#include <utility>
+#include <regex>
+#include <stdexcept>
+#include <climits>
 
-// Forward declarations for tiktoken library
+// Include the generated tiktoken data
+#include "tiktoken_data.h"
+
+// For Base64 decoding
+#include "base64.h"
+
 namespace tiktoken {
-    enum class LanguageModel {
-        CL100K_BASE,
-        P50K_BASE,
-        R50K_BASE,
-        P50K_EDIT,
-        O200K_BASE
-    };
 
-    class GptEncoding {
-    public:
-        static std::shared_ptr<GptEncoding> get_encoding(LanguageModel model);
-        virtual std::vector<int> encode(const std::string& text) = 0;
-        virtual ~GptEncoding() = default;
-    };
-}
+// Pair of byte strings
+typedef std::pair<std::string, std::string> BytesPair;
 
+// Custom hash function for BytesPair
+struct BytesPairHash {
+    std::size_t operator()(const BytesPair& p) const {
+        return std::hash<std::string>()(p.first) ^ std::hash<std::string>()(p.second);
+    }
+};
+
+class BpeEncoder {
+private:
+    // Token vocabulary: maps byte sequences to token IDs
+    std::unordered_map<std::string, int> token_vocab;
+    
+    // Special tokens (like <|endoftext|>)
+    std::unordered_map<std::string, int> special_tokens;
+    
+    // BPE merge ranks: lower rank = higher priority
+    std::unordered_map<BytesPair, int, BytesPairHash> bpe_ranks;
+    
+    // Pre-computed regex patterns
+    std::regex pat_split;
+    bool initialized;
+    
+    // Initialize the encoder with tiktoken data
+    void initialize() {
+        // Load special tokens from the data
+        for (size_t i = 0; i < TIKTOKEN_NUM_SPECIAL_TOKENS; i++) {
+            const tiktoken_special_token_t& special_token = tiktoken_special_tokens[i];
+            std::string token_bytes = base64_decode(special_token.token_b64);
+            special_tokens[token_bytes] = special_token.id;
+        }
+        
+        // Load vocabulary from the data
+        for (size_t i = 0; i < TIKTOKEN_VOCAB_SIZE; i++) {
+            const tiktoken_vocab_entry_t& vocab_entry = tiktoken_vocab[i];
+            std::string token_bytes = base64_decode(vocab_entry.token_b64);
+            token_vocab[token_bytes] = vocab_entry.id;
+        }
+        
+        // Load BPE merges from the data
+        for (size_t i = 0; i < TIKTOKEN_NUM_MERGES; i++) {
+            const tiktoken_bpe_merge_t& merge = tiktoken_bpe_merges[i];
+            std::string first = base64_decode(merge.first_b64);
+            std::string second = base64_decode(merge.second_b64);
+            bpe_ranks[{first, second}] = merge.rank;
+        }
+        
+        // Use a simple whitespace/punctuation split pattern for basic tokenization
+        pat_split = std::regex("\\s+|[[:punct:]]");
+        
+        initialized = true;
+    }
+    
+    // Get pairs of consecutive bytes from token
+    std::vector<BytesPair> get_pairs(const std::vector<std::string>& word_pieces) {
+        std::vector<BytesPair> pairs;
+        if (word_pieces.size() < 2) return pairs;
+        
+        for (size_t i = 0; i < word_pieces.size() - 1; i++) {
+            pairs.push_back({word_pieces[i], word_pieces[i+1]});
+        }
+        
+        return pairs;
+    }
+    
+    // Apply BPE to a token
+    std::vector<std::string> bpe(const std::string& token) {
+        // Initialize with individual bytes
+        std::vector<std::string> word;
+        for (unsigned char c : token) {
+            word.push_back(std::string(1, c));
+        }
+        
+        // Apply merges until no more can be applied
+        std::vector<BytesPair> pairs = get_pairs(word);
+        if (pairs.empty()) {
+            return word;
+        }
+        
+        while (true) {
+            // Find the pair with the lowest rank (highest priority)
+            int best_rank = INT_MAX;
+            BytesPair best_pair;
+            bool found = false;
+            
+            for (const auto& pair : pairs) {
+                auto it = bpe_ranks.find(pair);
+                if (it != bpe_ranks.end() && it->second < best_rank) {
+                    best_rank = it->second;
+                    best_pair = pair;
+                    found = true;
+                }
+            }
+            
+            if (!found) break;
+            
+            // Apply the merge
+            std::vector<std::string> new_word;
+            for (size_t i = 0; i < word.size();) {
+                // Try to find a match for the best pair
+                if (i < word.size() - 1 && word[i] == best_pair.first && word[i+1] == best_pair.second) {
+                    new_word.push_back(best_pair.first + best_pair.second);
+                    i += 2;  // Skip both parts of the pair
+                } else {
+                    new_word.push_back(word[i]);
+                    i += 1;
+                }
+            }
+            
+            // Update word and get new pairs
+            word = std::move(new_word);
+            pairs = get_pairs(word);
+            if (pairs.empty()) break;
+        }
+        
+        return word;
+    }
+
+    // Simple tokenization function - split text into tokens
+    std::vector<std::string> basic_tokenize(const std::string& text) {
+        std::vector<std::string> tokens;
+        
+        // First check if the entire string is a special token
+        auto it = special_tokens.find(text);
+        if (it != special_tokens.end()) {
+            tokens.push_back(text);
+            return tokens;
+        }
+        
+        // Simple tokenization approach - split on whitespace and punctuation
+        size_t start = 0;
+        for (size_t i = 0; i < text.size(); i++) {
+            char c = text[i];
+            if (isspace(c) || ispunct(c)) {
+                // Add accumulated token if any
+                if (i > start) {
+                    tokens.push_back(text.substr(start, i - start));
+                }
+                
+                // Add the whitespace or punctuation as a separate token
+                tokens.push_back(text.substr(i, 1));
+                start = i + 1;
+            }
+        }
+        
+        // Add the final token if any
+        if (start < text.size()) {
+            tokens.push_back(text.substr(start));
+        }
+        
+        return tokens;
+    }
+
+public:
+    BpeEncoder() : initialized(false) {
+        initialize();
+    }
+    
+    bool isInitialized() const {
+        return initialized;
+    }
+    
+    // Encode text into tokens
+    std::vector<int> encode(const std::string& text) {
+        // Check if the text matches a special token exactly
+        auto special_it = special_tokens.find(text);
+        if (special_it != special_tokens.end()) {
+            return {special_it->second};
+        }
+        
+        std::vector<int> encoded_tokens;
+
+        // First pass: basic tokenization
+        std::vector<std::string> raw_tokens = basic_tokenize(text);
+        
+        // Second pass: BPE on each piece
+        for (const auto& token : raw_tokens) {
+            // Special token check for each piece
+            special_it = special_tokens.find(token);
+            if (special_it != special_tokens.end()) {
+                encoded_tokens.push_back(special_it->second);
+                continue;
+            }
+            
+            // Apply BPE to get subtoken pieces
+            std::vector<std::string> bpe_tokens = bpe(token);
+            
+            // Convert each piece to a token ID
+            for (const auto& bpe_token : bpe_tokens) {
+                auto vocab_it = token_vocab.find(bpe_token);
+                if (vocab_it != token_vocab.end()) {
+                    encoded_tokens.push_back(vocab_it->second);
+                } else {
+                    // For unknown tokens, try byte-level encoding
+                    for (unsigned char c : bpe_token) {
+                        std::string byte_token(1, c);
+                        auto byte_it = token_vocab.find(byte_token);
+                        if (byte_it != token_vocab.end()) {
+                            encoded_tokens.push_back(byte_it->second);
+                        }
+                    }
+                }
+            }
+        }
+        
+        return encoded_tokens;
+    }
+};
+
+}  // namespace tiktoken
+
+// This is our C interface for the BpeEncoder
 extern "C" {
 #include "tiktoken.h"
 
 // This struct holds the C++ encoder object
 struct TiktokenWrapper {
-    std::shared_ptr<tiktoken::GptEncoding> encoder;
+    tiktoken::BpeEncoder* encoder;
+    bool initialized;
 };
 
-// Simple implementation of a token encoder
-// In the absence of the cpp-tiktoken library, we'll provide a simple implementation
+// Global tiktoken instance for simple API
+static TiktokenWrapper* g_default_tiktoken = nullptr;
 
-// Simple encoding implementation
-class SimpleEncoding : public tiktoken::GptEncoding {
-private:
-    tiktoken::LanguageModel model;
-public:
-    SimpleEncoding(tiktoken::LanguageModel m) : model(m) {}
+// Initialize the default tiktoken instance
+bool init_tiktoken() {
+    if (g_default_tiktoken != nullptr && g_default_tiktoken->initialized) {
+        return true;
+    }
     
-    std::vector<int> encode(const std::string& text) override {
-        std::vector<int> tokens;
-        
-        // Simple tokenization: split by spaces and punctuation
-        size_t start = 0;
-        size_t pos = 0;
-        int token_id = 100; // Start with some arbitrary token ID
-        
-        while (pos < text.length()) {
-            if (isspace(text[pos]) || ispunct(text[pos])) {
-                // If we have accumulated characters, add them as a token
-                if (pos > start) {
-                    tokens.push_back(token_id++);
-                    start = pos;
-                }
-                
-                // Add space/punctuation as its own token
-                tokens.push_back(text[pos]);
-                start = ++pos;
-            } else {
-                pos++;
-                
-                // At end of string, add final token if needed
-                if (pos == text.length() && pos > start) {
-                    tokens.push_back(token_id++);
-                }
-            }
+    try {
+        if (g_default_tiktoken == nullptr) {
+            g_default_tiktoken = new TiktokenWrapper();
+            g_default_tiktoken->encoder = new tiktoken::BpeEncoder();
+            g_default_tiktoken->initialized = g_default_tiktoken->encoder->isInitialized();
         }
         
-        return tokens;
+        return g_default_tiktoken->initialized;
+    } catch (const std::exception& e) {
+        fprintf(stderr, "Failed to initialize tiktoken: %s\n", e.what());
+        return false;
+    } catch (...) {
+        fprintf(stderr, "Unknown error initializing tiktoken\n");
+        return false;
     }
-};
-
-// Implementation of GptEncoding static method
-std::shared_ptr<tiktoken::GptEncoding> tiktoken::GptEncoding::get_encoding(tiktoken::LanguageModel model) {
-    return std::make_shared<SimpleEncoding>(model);
 }
 
-// Maps string encoding names to our LanguageModel enum
-static tiktoken::LanguageModel get_language_model(const char* encoding_name) {
-    if (strcmp(encoding_name, "cl100k_base") == 0) {
-        return tiktoken::LanguageModel::CL100K_BASE;
-    }
-    // Default to CL100K_BASE for any model
-    return tiktoken::LanguageModel::CL100K_BASE;
-}
-
+// Get an encoding by name (only cl100k_base is supported)
 TiktokenWrapper* tiktoken_cpp_get_encoding(const char* encoding_name) {
     try {
-        TiktokenWrapper* wrapper = new TiktokenWrapper();
-        wrapper->encoder = tiktoken::GptEncoding::get_encoding(get_language_model(encoding_name));
-        return wrapper;
+        // We only support cl100k_base for now
+        if (strcmp(encoding_name, "cl100k_base") != 0) {
+            fprintf(stderr, "Warning: Only cl100k_base encoding is supported, using it instead of %s\n", 
+                    encoding_name);
+        }
+        
+        // Initialize or return the default instance
+        if (init_tiktoken()) {
+            return g_default_tiktoken;
+        }
+        return nullptr;
     } catch (const std::exception& e) {
+        fprintf(stderr, "Exception getting encoding: %s\n", e.what());
         return nullptr;
     }
 }
 
-int tiktoken_cpp_encode(TiktokenWrapper* wrapper, const char* text, size_t text_len, tiktoken_token_t** tokens_out) {
+// Encode a string to tokens
+int tiktoken_cpp_encode(TiktokenWrapper* wrapper, const char* text, size_t text_len, 
+                        tiktoken_token_t** tokens_out) {
     try {
-        if (wrapper == nullptr || wrapper->encoder == nullptr) {
+        if (wrapper == nullptr || wrapper->encoder == nullptr || !wrapper->initialized) {
             return -1;
         }
 
@@ -113,7 +306,7 @@ int tiktoken_cpp_encode(TiktokenWrapper* wrapper, const char* text, size_t text_
             text_str.assign(text, text_len);
         }
         
-        // Encode the text using our simple implementation
+        // Encode the text using the BPE algorithm
         std::vector<int> tokens = wrapper->encoder->encode(text_str);
         
         // Allocate memory for the result
@@ -132,9 +325,48 @@ int tiktoken_cpp_encode(TiktokenWrapper* wrapper, const char* text, size_t text_
     }
 }
 
+// Count tokens without returning them
+int tiktoken_cpp_count(TiktokenWrapper* wrapper, const char* text, size_t text_len) {
+    try {
+        if (wrapper == nullptr || wrapper->encoder == nullptr || !wrapper->initialized) {
+            return -1;
+        }
+
+        // Create a string from the text
+        std::string text_str;
+        if (text != nullptr && text_len > 0) {
+            text_str.assign(text, text_len);
+        }
+        
+        // Encode and return the count
+        std::vector<int> tokens = wrapper->encoder->encode(text_str);
+        return static_cast<int>(tokens.size());
+    } catch (const std::exception& e) {
+        fprintf(stderr, "Exception in token counting: %s\n", e.what());
+        return -1;
+    }
+}
+
+// Free a tiktoken encoding
 void tiktoken_cpp_free(TiktokenWrapper* wrapper) {
-    if (wrapper != nullptr) {
+    if (wrapper != nullptr && wrapper != g_default_tiktoken) {
+        if (wrapper->encoder != nullptr) {
+            delete wrapper->encoder;
+            wrapper->encoder = nullptr;
+        }
         delete wrapper;
+    }
+}
+
+// Clean up global resources on program exit
+void tiktoken_cleanup() {
+    if (g_default_tiktoken != nullptr) {
+        if (g_default_tiktoken->encoder != nullptr) {
+            delete g_default_tiktoken->encoder;
+            g_default_tiktoken->encoder = nullptr;
+        }
+        delete g_default_tiktoken;
+        g_default_tiktoken = nullptr;
     }
 }
 
