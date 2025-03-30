@@ -8,6 +8,7 @@
 #include "dirdoc.h"
 #include "writer.h"  // Include writer.h to set split options
 
+#ifndef UNIT_TEST
 /**
  * @brief Prints the help/usage information to stdout.
  */
