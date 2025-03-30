@@ -60,16 +60,28 @@ private:
         // Load vocabulary from the data
         for (size_t i = 0; i < TIKTOKEN_VOCAB_SIZE; i++) {
             const tiktoken_vocab_entry_t& vocab_entry = tiktoken_vocab[i];
-            std::string token_bytes = base64_decode(vocab_entry.token_b64);
-            token_vocab[token_bytes] = vocab_entry.id;
+            try {
+                std::string token_bytes = base64_decode(vocab_entry.token_b64);
+                token_vocab[token_bytes] = vocab_entry.id;
+            } catch (const std::exception& e) {
+                fprintf(stderr, "Warning: Failed to decode token %zu: %s\n", i, e.what());
+            }
         }
         
-        // Load BPE merges from the data
-        for (size_t i = 0; i < TIKTOKEN_NUM_MERGES; i++) {
-            const tiktoken_bpe_merge_t& merge = tiktoken_bpe_merges[i];
-            std::string first = base64_decode(merge.first_b64);
-            std::string second = base64_decode(merge.second_b64);
-            bpe_ranks[{first, second}] = merge.rank;
+        // Load BPE merges from the data - safely handle if we have none
+        if (TIKTOKEN_NUM_MERGES > 0) {
+            for (size_t i = 0; i < TIKTOKEN_NUM_MERGES; i++) {
+                try {
+                    const tiktoken_bpe_merge_t& merge = tiktoken_bpe_merges[i];
+                    std::string first = base64_decode(merge.first_b64);
+                    std::string second = base64_decode(merge.second_b64);
+                    bpe_ranks[{first, second}] = merge.rank;
+                } catch (const std::exception& e) {
+                    fprintf(stderr, "Warning: Failed to decode merge %zu: %s\n", i, e.what());
+                }
+            }
+        } else {
+            fprintf(stderr, "Note: No BPE merge data available. Using basic tokenization.\n");
         }
         
         // Use a simple whitespace/punctuation split pattern for basic tokenization
@@ -209,8 +221,16 @@ public:
                 continue;
             }
             
-            // Apply BPE to get subtoken pieces
-            std::vector<std::string> bpe_tokens = bpe(token);
+            // Apply BPE to get subtoken pieces if we have merge data, otherwise use raw tokens
+            std::vector<std::string> bpe_tokens;
+            if (bpe_ranks.empty()) {
+                // If we don't have BPE data, just use character-level encoding
+                for (unsigned char c : token) {
+                    bpe_tokens.push_back(std::string(1, c));
+                }
+            } else {
+                bpe_tokens = bpe(token);
+            }
             
             // Convert each piece to a token ID
             for (const auto& bpe_token : bpe_tokens) {

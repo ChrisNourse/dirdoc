@@ -58,17 +58,32 @@ def main():
         f.write("};\n\n")
         
         # BPE merges
-        f.write(f"#define TIKTOKEN_NUM_MERGES {len(data['merges'])}\n\n")
-        f.write("typedef struct {\n")
-        f.write("    const char* first_b64;  // Base64 encoded first piece\n")
-        f.write("    const char* second_b64; // Base64 encoded second piece\n")
-        f.write("    int rank;               // Merge rank (lower = higher priority)\n")
-        f.write("} tiktoken_bpe_merge_t;\n\n")
+        merge_count = len(data.get('merges', []))
+        f.write(f"#define TIKTOKEN_NUM_MERGES {merge_count}\n\n")
         
-        f.write("static const tiktoken_bpe_merge_t tiktoken_bpe_merges[TIKTOKEN_NUM_MERGES] = {\n")
-        for first_b64, second_b64, rank in data['merges']:
-            f.write(f"    {{\"{first_b64}\", \"{second_b64}\", {rank}}},\n")
-        f.write("};\n\n")
+        if merge_count > 0:
+            f.write("typedef struct {\n")
+            f.write("    const char* first_b64;  // Base64 encoded first piece\n")
+            f.write("    const char* second_b64; // Base64 encoded second piece\n")
+            f.write("    int rank;               // Merge rank (lower = higher priority)\n")
+            f.write("} tiktoken_bpe_merge_t;\n\n")
+            
+            f.write("static const tiktoken_bpe_merge_t tiktoken_bpe_merges[TIKTOKEN_NUM_MERGES] = {\n")
+            for first_b64, second_b64, rank in data['merges']:
+                f.write(f"    {{\"{first_b64}\", \"{second_b64}\", {rank}}},\n")
+            f.write("};\n\n")
+        else:
+            f.write("// No BPE merges available\n")
+            f.write("typedef struct {\n")
+            f.write("    const char* first_b64;\n")
+            f.write("    const char* second_b64;\n")
+            f.write("    int rank;\n")
+            f.write("} tiktoken_bpe_merge_t;\n\n")
+            
+            f.write("// Empty array as placeholder\n")
+            f.write("static const tiktoken_bpe_merge_t tiktoken_bpe_merges[1] = {\n")
+            f.write("    {NULL, NULL, 0}\n")
+            f.write("};\n\n")
         
         f.write("#endif /* TIKTOKEN_DATA_H */\n")
         

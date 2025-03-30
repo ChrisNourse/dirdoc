@@ -34,11 +34,15 @@ def main():
     pat_b = [x for x in range(encoding.n_vocab) if x not in encoding._special_tokens.values()]
     
     for token_id in pat_b:
-        # Get the token bytes
-        token_bytes = encoding.decode_single_token_bytes(token_id)
-        # Convert to base64
-        token_b64 = base64.b64encode(token_bytes).decode('ascii')
-        vocab[token_b64] = token_id
+        try:
+            # Get the token bytes - safely handle missing token IDs
+            token_bytes = encoding.decode_single_token_bytes(token_id)
+            # Convert to base64
+            token_b64 = base64.b64encode(token_bytes).decode('ascii')
+            vocab[token_b64] = token_id
+        except KeyError:
+            print(f"Warning: Token ID {token_id} not found in vocabulary, skipping")
+            continue
     
     # Try to extract BPE merges
     merges = []
