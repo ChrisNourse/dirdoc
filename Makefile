@@ -13,11 +13,11 @@ CC = $(DEPS_DIR)/cosmocc/bin/cosmocc
 CFLAGS = -g -O2 -Ideps/cosmocc/include $(TIKTOKEN_INCLUDE)
 LDFLAGS = $(TIKTOKEN_LDFLAGS)
 
-# Tiktoken integration (fetching data from repo)
-TIKTOKEN_REPO_URL = https://github.com/openai/tiktoken.git
-TIKTOKEN_DIR      = $(DEPS_DIR)/tiktoken
+# Tiktoken integration (downloading data file directly)
 TIKTOKEN_ENCODER_NAME = cl100k_base # Or change to gpt2, r50k_base, p50k_base, p50k_edit, etc.
-TIKTOKEN_DATA_FILE = $(TIKTOKEN_DIR)/tiktoken/encoders/$(TIKTOKEN_ENCODER_NAME).tiktoken
+TIKTOKEN_BASE_URL = https://openaipublic.blob.core.windows.net/encodings
+TIKTOKEN_DATA_URL = $(TIKTOKEN_BASE_URL)/$(TIKTOKEN_ENCODER_NAME).tiktoken
+TIKTOKEN_DOWNLOADED_FILE = $(BUILD_DIR)/$(TIKTOKEN_ENCODER_NAME).tiktoken # Store downloaded file in build dir
 TIKTOKEN_GEN_TOOL_SRC = $(TOOLS_DIR)/generate_tiktoken_data.cpp
 TIKTOKEN_GEN_TOOL_OBJ = $(BUILD_DIR)/generate_tiktoken_data.o
 TIKTOKEN_GEN_TOOL_EXE = $(BUILD_DIR)/generate_tiktoken_data
@@ -48,7 +48,7 @@ ALL_CPP_OBJECTS = $(MAIN_CPP_OBJECTS) $(TIKTOKEN_GEN_TOOL_OBJ)
 DIRDOC_LINK_OBJS = $(filter-out $(DIRDOC_OBJ), $(OBJECTS)) $(MAIN_CPP_OBJECTS)
 
 
-.PHONY: all clean super_clean deps deps_cosmo deps_tiktoken help test build_temp clean_temp samples test_tiktoken tools
+.PHONY: all clean super_clean deps deps_cosmo help test build_temp clean_temp samples test_tiktoken tools
 
 # Target for building tools
 tools: $(TIKTOKEN_GEN_TOOL_EXE)
@@ -59,8 +59,8 @@ all: $(BUILD_DIR)/dirdoc
 	@echo "📍 Binary location: $(BUILD_DIR)/dirdoc"
 	@echo "🚀 Run ./$(BUILD_DIR)/dirdoc --help for usage"
 
-# Combined dependencies target
-deps: deps_cosmo deps_tiktoken
+# Combined dependencies target (only Cosmo now)
+deps: deps_cosmo
 
 # Cosmopolitan dependency target
 deps_cosmo: $(CC)
@@ -77,27 +77,23 @@ $(CC): $(DEPS_DIR)/$(COSMO_ZIP)
 		echo "✅ cosmocc already exists, skipping unzip"; \
 	fi
 
-# Tiktoken dependency target: clone repo
-deps_tiktoken: $(TIKTOKEN_DIR)/.git
-
-$(TIKTOKEN_DIR)/.git:
-	@echo "⏳ Checking tiktoken repository..."
-	@if [ ! -d "$(TIKTOKEN_DIR)" ]; then \
-		echo "📦 Cloning tiktoken repository from $(TIKTOKEN_REPO_URL)..."; \
-		git clone --depth 1 $(TIKTOKEN_REPO_URL) $(TIKTOKEN_DIR); \
-		echo "✅ Tiktoken repository cloned."; \
+# Target to download the tiktoken data file
+$(TIKTOKEN_DOWNLOADED_FILE): | $(BUILD_DIR)
+	@echo "⏳ Checking for tiktoken data file $(TIKTOKEN_DOWNLOADED_FILE)..."
+	@if [ ! -f "$@" ]; then \
+		echo "📦 Downloading tiktoken data from $(TIKTOKEN_DATA_URL)..."; \
+		curl -L -o $@ "$(TIKTOKEN_DATA_URL)"; \
+		echo "✅ Tiktoken data file downloaded."; \
 	else \
-		echo "✅ Tiktoken repository already exists, skipping clone."; \
-		echo "ℹ️  Consider 'rm -rf $(TIKTOKEN_DIR) && make deps_tiktoken' to re-clone if needed."; \
+		echo "✅ Tiktoken data file already exists."; \
 	fi
-	@touch $@ # Update timestamp for Make
 
-# Target to generate the tiktoken C header from the cloned repo data
-# Requires the compiled C++ generator tool.
-$(TIKTOKEN_GENERATED_HEADER): $(TIKTOKEN_GEN_TOOL_EXE) $(TIKTOKEN_DATA_FILE) | $(BUILD_DIR) deps_tiktoken
+# Target to generate the tiktoken C header from the downloaded repo data
+# Requires the compiled C++ generator tool and the downloaded data file.
+$(TIKTOKEN_GENERATED_HEADER): $(TIKTOKEN_GEN_TOOL_EXE) $(TIKTOKEN_DOWNLOADED_FILE) | $(BUILD_DIR)
 	@echo "⏳ Generating tiktoken C header $(TIKTOKEN_GENERATED_HEADER)..."
 	@echo "⚙️ Running $(TIKTOKEN_GEN_TOOL_EXE)..."
-	./$(TIKTOKEN_GEN_TOOL_EXE) $(TIKTOKEN_DATA_FILE) $@ $(TIKTOKEN_ENCODER_NAME)
+	./$(TIKTOKEN_GEN_TOOL_EXE) $(TIKTOKEN_DOWNLOADED_FILE) $@ $(TIKTOKEN_ENCODER_NAME)
 	@echo "✅ Tiktoken C header generation step finished."
 
 # Rule to build the generator tool executable
@@ -111,17 +107,6 @@ $(TIKTOKEN_GEN_TOOL_OBJ): $(TIKTOKEN_GEN_TOOL_SRC) | $(BUILD_DIR) deps_cosmo
 	@echo "⏳ Compiling generator tool $<..."
 	$(CXX) $(CFLAGS) -I$(SRC_DIR) -c $< -o $@ # Include src for base64.h
 	@echo "✅ Generator tool compiled."
-
-# Explicit rule stating that the data file depends on the repo being cloned.
-$(TIKTOKEN_DATA_FILE): deps_tiktoken
-	@# This rule ensures the dependency is tracked. The file is created by git clone.
-	@# We add a check here to make sure the file exists after cloning.
-	@# Use the variable explicitly instead of $@ to avoid potential expansion issues.
-	@if [ ! -f "$(TIKTOKEN_DATA_FILE)" ]; then \
-		echo "❌ Error: Tiktoken data file '$(TIKTOKEN_DATA_FILE)' not found after running deps_tiktoken."; \
-		echo "ℹ️  Check the clone step or the path in the Makefile."; \
-		exit 1; \
-	fi
 
 
 $(DEPS_DIR)/$(COSMO_ZIP):
@@ -142,7 +127,7 @@ $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c | $(BUILD_DIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 # Compile main C++ files, ensuring tiktoken_cpp.o depends on the generated header
-$(BUILD_DIR)/tiktoken_cpp.o: $(SRC_DIR)/tiktoken_cpp.cpp $(TIKTOKEN_GENERATED_HEADER) | $(BUILD_DIR) deps_tiktoken
+$(BUILD_DIR)/tiktoken_cpp.o: $(SRC_DIR)/tiktoken_cpp.cpp $(TIKTOKEN_GENERATED_HEADER) | $(BUILD_DIR)
 	$(CXX) $(CFLAGS) -c $(SRC_DIR)/tiktoken_cpp.cpp -o $@
 
 # Link all object files together for the main executable, ensuring dirdoc.o is last.
@@ -202,13 +187,13 @@ super_clean:
 
 help:
 	@echo "Available targets:"
-	@echo "  all         - Build the dirdoc application (clones deps, generates header)"
-	@echo "  deps        - Download/clone and set up dependencies (Cosmopolitan & Tiktoken repo)"
+	@echo "  all         - Build the dirdoc application (downloads deps, generates header)"
+	@echo "  deps        - Download and set up dependencies (Cosmopolitan)"
 	@echo "  deps_cosmo  - Download and set up Cosmopolitan dependency"
-	@echo "  deps_tiktoken - Clone the Tiktoken repository"
 	@echo "  tools       - Build helper tools (e.g., tiktoken data generator)"
-	@echo "  $(TIKTOKEN_GENERATED_HEADER) - Generate the tiktoken C header (requires compiled C++ tool and cloned repo)"
-	@echo "  clean       - Remove build artifacts (including tools)"
+	@echo "  $(TIKTOKEN_DOWNLOADED_FILE) - Download the tiktoken data file"
+	@echo "  $(TIKTOKEN_GENERATED_HEADER) - Generate the tiktoken C header (requires compiled C++ tool and downloaded data)"
+	@echo "  clean       - Remove build artifacts (including tools and downloaded data)"
 	@echo "  super_clean - Remove build artifacts and dependencies"
 	@echo "  test        - Build and run the test suite"
 	@echo "  build_temp  - Build the test binary for generating temp test files (without auto-cleanup)"
