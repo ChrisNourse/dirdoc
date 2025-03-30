@@ -54,6 +54,9 @@ ALL_CPP_OBJECTS = $(MAIN_CPP_OBJECTS) $(TIKTOKEN_GEN_TOOL_OBJ)
 # Objects for the final dirdoc executable
 DIRDOC_LINK_OBJS = $(filter-out $(DIRDOC_OBJ), $(OBJECTS)) $(MAIN_CPP_OBJECTS)
 
+# Test objects need to include dirdoc.o explicitly to resolve get_default_output()
+TEST_LINK_OBJS = $(OBJECTS) $(MAIN_CPP_OBJECTS) $(TEST_OBJECTS)
+
 # Test source files and object files
 TEST_SOURCES = $(wildcard $(TEST_DIR)/*.c)
 TEST_OBJECTS = $(patsubst $(TEST_DIR)/%.c, $(BUILD_DIR)/test_%.o, $(TEST_SOURCES))
@@ -162,7 +165,7 @@ $(BUILD_DIR)/dirdoc: $(DIRDOC_LINK_OBJS) $(DIRDOC_OBJ) | deps
 	@echo "✅ Build complete"
 
 # Link test objects and application objects for the main test executable
-$(BUILD_DIR)/dirdoc_test: $(filter-out $(DIRDOC_OBJ), $(OBJECTS)) $(MAIN_CPP_OBJECTS) $(TEST_OBJECTS) $(TIKTOKEN_GENERATED_HEADER) | $(BUILD_DIR) deps
+$(BUILD_DIR)/dirdoc_test: $(OBJECTS) $(MAIN_CPP_OBJECTS) $(TEST_OBJECTS) $(TIKTOKEN_GENERATED_HEADER) | $(BUILD_DIR) deps
 	@echo "⏳ Linking test executable..."
 	$(CXX) $(LDFLAGS) -o $@ $(filter-out $(TIKTOKEN_GENERATED_HEADER), $^)
 	@echo "✅ Test link complete"
