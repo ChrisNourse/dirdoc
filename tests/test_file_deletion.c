@@ -8,6 +8,8 @@
 #include <sys/stat.h>
 #include <assert.h>
 
+#define MAX_PATH_LEN 4096
+
 #include "../src/dirdoc.h"
 
 /* Helper function to create a test output file */
@@ -42,22 +44,54 @@ int test_delete_existing_file() {
     // Check that the function completed successfully
     assert(result == 0);
     
-    // Check that the file exists (was recreated after deletion)
-    assert(access(output_file, F_OK) == 0);
+    // The file might have been split, so check for either the original file
+    // or a split version (with _part1 suffix)
+    char split_file[MAX_PATH_LEN];
+    snprintf(split_file, sizeof(split_file), "%s_part1.md", test_dir);
+    
+    if (access(output_file, F_OK) != 0 && access(split_file, F_OK) != 0) {
+        printf("Error: Neither original output file (%s) nor split file (%s) exists\n", 
+               output_file, split_file);
+        assert(0);  // Force failure with a clearer message
+    }
     
     // Open and check that the content is not the original content
-    FILE *f = fopen(output_file, "r");
+    // Check which file to open
+    char *file_to_check = NULL;
+    if (access(output_file, F_OK) == 0) {
+        file_to_check = strdup(output_file);
+    } else {
+        // Try the split file
+        char split_file[MAX_PATH_LEN];
+        snprintf(split_file, sizeof(split_file), "%s_part1.md", test_dir);
+        if (access(split_file, F_OK) == 0) {
+            file_to_check = strdup(split_file);
+        }
+    }
+    
+    assert(file_to_check != NULL);
+    FILE *f = fopen(file_to_check, "r");
     assert(f != NULL);
     
     char buffer[100];
     fgets(buffer, sizeof(buffer), f);
     fclose(f);
+    free(file_to_check);
     
     // Check that the content has changed and is not the original text
     assert(strstr(buffer, "This is existing content") == NULL);
     
-    // Clean up
-    remove(output_file);
+    // Clean up - check which file exists and remove it
+    if (access(output_file, F_OK) == 0) {
+        remove(output_file);
+    } else {
+        // Try to remove the split file if it exists
+        char split_file[MAX_PATH_LEN];
+        snprintf(split_file, sizeof(split_file), "%s_part1.md", test_dir);
+        if (access(split_file, F_OK) == 0) {
+            remove(split_file);
+        }
+    }
     remove("./tests/test_data/sample.txt");
     
     printf("✓ test_delete_existing_file passed\n");
