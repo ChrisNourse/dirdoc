@@ -13,7 +13,8 @@ jobs:
       - name: Check for required version label
         id: check-labels
         run: |
-          LABELS="${{ toJson(github.event.pull_request.labels.*.name) }}"
+          # Use single quotes to prevent bash expansion issues
+          LABELS='${{ toJson(github.event.pull_request.labels.*.name) }}'
           echo "Raw Labels: $LABELS"
           
           # Print for debugging
@@ -25,25 +26,29 @@ jobs:
           echo "Label contains 'patch'? $(echo "$LABELS" | grep -q "patch" && echo "YES" || echo "NO")"
           
           # Simpler detection method
-          if echo "$LABELS" | grep -q "major"; then
+          # Use case-insensitive matching (-i) and fixed-string matching (-F) for reliability
+          if echo "$LABELS" | grep -i -F "major" > /dev/null; then
             MAJOR_LABEL="major"
             echo "Found major label"
           else
             MAJOR_LABEL=""
+            echo "No major label found"
           fi
           
-          if echo "$LABELS" | grep -q "minor"; then
+          if echo "$LABELS" | grep -i -F "minor" > /dev/null; then
             MINOR_LABEL="minor"
             echo "Found minor label"
           else
             MINOR_LABEL=""
+            echo "No minor label found"
           fi
           
-          if echo "$LABELS" | grep -q "patch"; then
+          if echo "$LABELS" | grep -i -F "patch" > /dev/null; then
             PATCH_LABEL="patch"
             echo "Found patch label"
           else
             PATCH_LABEL=""
+            echo "No patch label found"
           fi
           
           VERSION_LABELS_COUNT=0
