@@ -108,16 +108,20 @@ $(TIKTOKEN_DOWNLOADED_FILE): | $(BUILD_DIR)
 		curl -L -o $@ "$(TIKTOKEN_DATA_URL)"; \
 		echo "✅ Tiktoken data file downloaded."; \
 	else \
-		echo "✅ Tiktoken data file already exists."; \
+		echo "✅ Tiktoken data file already exists, skipping download"; \
 	fi
 
 # Target to generate the tiktoken C header from the downloaded repo data
 # Requires the compiled C++ generator tool and the downloaded data file.
 $(TIKTOKEN_GENERATED_HEADER): $(TIKTOKEN_GEN_TOOL_EXE) $(TIKTOKEN_DOWNLOADED_FILE) | $(BUILD_DIR)
 	@echo "⏳ Generating tiktoken C header $(TIKTOKEN_GENERATED_HEADER)..."
-	@echo "⚙️ Running $(TIKTOKEN_GEN_TOOL_EXE)..."
-	./$(TIKTOKEN_GEN_TOOL_EXE) $(TIKTOKEN_DOWNLOADED_FILE) $@ $(TIKTOKEN_ENCODER_NAME)
-	@echo "✅ Tiktoken C header generation step finished."
+	@if [ ! -f "$@" ] || [ "$(TIKTOKEN_DOWNLOADED_FILE)" -nt "$@" ]; then \
+		echo "⚙️ Running $(TIKTOKEN_GEN_TOOL_EXE)..."; \
+		./$(TIKTOKEN_GEN_TOOL_EXE) $(TIKTOKEN_DOWNLOADED_FILE) $@ $(TIKTOKEN_ENCODER_NAME); \
+		echo "✅ Tiktoken C header generation complete."; \
+	else \
+		echo "✅ Tiktoken C header already exists and is up to date, skipping generation"; \
+	fi
 
 # Rule to build the generator tool executable
 $(TIKTOKEN_GEN_TOOL_EXE): $(TIKTOKEN_GEN_TOOL_OBJ) | $(BUILD_DIR) deps_cosmo
@@ -226,3 +230,4 @@ help:
 	@echo "  build_temp  - Build the test binary for generating temp test files (without auto-cleanup)"
 	@echo "  clean_temp  - Remove all temporary test files from the 'tmp' directory"
 	@echo "  help        - Show this help message"
+	
