@@ -538,7 +538,6 @@ int document_directory(const char *input_dir, const char *output_file, int flags
         if (remove(out_path) != 0) {
             fprintf(stderr, "Error: Could not remove existing output file '%s'. Check permissions.\n", out_path);
             fprintf(stderr, "To avoid conflicts, documentation will not be generated to this file.\n");
-            free_file_list(&files);
             free_gitignore(&gitignore);
             if (!output_file) {
                 free(out_path);
