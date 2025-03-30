@@ -47,6 +47,18 @@ ALL_CPP_OBJECTS = $(MAIN_CPP_OBJECTS) $(TIKTOKEN_GEN_TOOL_OBJ)
 # Objects for the final dirdoc executable
 DIRDOC_LINK_OBJS = $(filter-out $(DIRDOC_OBJ), $(OBJECTS)) $(MAIN_CPP_OBJECTS)
 
+# Test source files and object files
+TEST_SOURCES = $(wildcard $(TEST_DIR)/*.c)
+TEST_OBJECTS = $(patsubst $(TEST_DIR)/%.c, $(BUILD_DIR)/test_%.o, $(TEST_SOURCES))
+
+# Test-specific flags
+TEST_CFLAGS = -DUNIT_TEST -I. -I$(SRC_DIR) -I$(TEST_DIR) -Ideps/cosmocc/include
+
+# Specific objects needed for test_tiktoken
+TEST_TIKTOKEN_SRCS = test_tiktoken.c
+TEST_TIKTOKEN_OBJ = $(patsubst %.c, $(BUILD_DIR)/test_%.o, $(TEST_TIKTOKEN_SRCS))
+TIKTOKEN_TEST_DEPS = $(BUILD_DIR)/tiktoken.o $(BUILD_DIR)/stats.o $(BUILD_DIR)/tiktoken_cpp.o
+
 
 .PHONY: all clean super_clean deps deps_cosmo help test build_temp clean_temp samples test_tiktoken tools
 
@@ -131,6 +143,10 @@ $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c | $(BUILD_DIR)
 $(BUILD_DIR)/tiktoken_cpp.o: $(SRC_DIR)/tiktoken_cpp.cpp $(TIKTOKEN_GENERATED_HEADER) | $(BUILD_DIR)
 	$(CXX) $(CFLAGS) -c $(SRC_DIR)/tiktoken_cpp.cpp -o $@
 
+# Compile test source files into object files
+$(BUILD_DIR)/test_%.o: $(TEST_DIR)/%.c | $(BUILD_DIR)
+	$(CC) $(CFLAGS) $(TEST_CFLAGS) -c $< -o $@
+
 # Link all object files together for the main executable, ensuring dirdoc.o is last.
 # Make sure the generated header exists before linking.
 $(BUILD_DIR)/dirdoc: $(DIRDOC_LINK_OBJS) $(DIRDOC_OBJ) $(TIKTOKEN_GENERATED_HEADER) | deps
@@ -138,17 +154,23 @@ $(BUILD_DIR)/dirdoc: $(DIRDOC_LINK_OBJS) $(DIRDOC_OBJ) $(TIKTOKEN_GENERATED_HEAD
 	$(CXX) $(LDFLAGS) -o $@ $(DIRDOC_LINK_OBJS) $(DIRDOC_OBJ)
 	@echo "✅ Build complete"
 
-# Update test build dependencies (uses MAIN_CPP_OBJECTS)
-$(BUILD_DIR)/dirdoc_test: $(wildcard $(SRC_DIR)/*.c) $(wildcard $(TEST_DIR)/*.c) $(MAIN_CPP_OBJECTS) $(TIKTOKEN_GENERATED_HEADER) | $(BUILD_DIR) deps
-	@echo "⏳ Building tests..."
-	$(CXX) $(CFLAGS) -DUNIT_TEST -I. -I$(SRC_DIR) -I$(TEST_DIR) -Ideps/cosmocc/include -o $@ $(filter-out $(TIKTOKEN_GENERATED_HEADER), $^) $(LDFLAGS)
-	@echo "✅ Test build complete"
+# Link test objects and application objects for the main test executable
+$(BUILD_DIR)/dirdoc_test: $(filter-out $(DIRDOC_OBJ), $(OBJECTS)) $(MAIN_CPP_OBJECTS) $(TEST_OBJECTS) $(TIKTOKEN_GENERATED_HEADER) | $(BUILD_DIR) deps
+	@echo "⏳ Linking test executable..."
+	$(CXX) $(LDFLAGS) -o $@ $(filter-out $(TIKTOKEN_GENERATED_HEADER), $^)
+	@echo "✅ Test link complete"
 
-# Update temp test build dependencies (uses MAIN_CPP_OBJECTS)
-$(BUILD_DIR)/temp_test: $(wildcard $(SRC_DIR)/*.c) $(wildcard $(TEST_DIR)/*.c) $(MAIN_CPP_OBJECTS) $(TIKTOKEN_GENERATED_HEADER) | $(BUILD_DIR) deps
-	@echo "⏳ Building temp test binary..."
-	$(CXX) $(CFLAGS) -DUNIT_TEST -DINSPECT_TEMP -I. -I$(SRC_DIR) -I$(TEST_DIR) -Ideps/cosmocc/include -o $@ $(filter-out $(TIKTOKEN_GENERATED_HEADER), $^) $(LDFLAGS)
-	@echo "✅ Temp test build complete"
+# Link test objects and application objects for the temp test executable
+$(BUILD_DIR)/temp_test: $(filter-out $(DIRDOC_OBJ), $(OBJECTS)) $(MAIN_CPP_OBJECTS) $(TEST_OBJECTS) $(TIKTOKEN_GENERATED_HEADER) | $(BUILD_DIR) deps
+	@echo "⏳ Linking temp test executable..."
+	$(CXX) $(LDFLAGS) -DINSPECT_TEMP -o $@ $(filter-out $(TIKTOKEN_GENERATED_HEADER), $^)
+	@echo "✅ Temp test link complete"
+
+# Link tiktoken test objects with required application objects
+$(BUILD_DIR)/test_tiktoken: $(TEST_TIKTOKEN_OBJ) $(TIKTOKEN_TEST_DEPS) $(TIKTOKEN_GENERATED_HEADER) | $(BUILD_DIR) deps
+	@echo "⏳ Linking tiktoken test executable..."
+	$(CXX) $(LDFLAGS) -o $@ $(filter-out $(TIKTOKEN_GENERATED_HEADER), $^)
+	@echo "✅ Tiktoken test link complete"
 
 build_temp: deps $(BUILD_DIR)/temp_test
 	@echo "✅ Temp test binary built. Run './$(BUILD_DIR)/temp_test' to generate temporary test files for inspection."
@@ -164,12 +186,6 @@ test: $(BUILD_DIR)/dirdoc_test $(BUILD_DIR)/test_tiktoken
 	./$(BUILD_DIR)/dirdoc_test
 	@echo "🚀 Running tiktoken tests..."
 	./$(BUILD_DIR)/test_tiktoken
-
-# Update tiktoken test build dependencies (needs tiktoken_cpp.o)
-$(BUILD_DIR)/test_tiktoken: $(SRC_DIR)/tiktoken.c $(BUILD_DIR)/tiktoken_cpp.o $(SRC_DIR)/stats.c tests/test_tiktoken.c $(TIKTOKEN_GENERATED_HEADER) | $(BUILD_DIR) deps
-	@echo "⏳ Building tiktoken tests..."
-	$(CXX) $(CFLAGS) -DUNIT_TEST -I. -I$(SRC_DIR) -I$(TEST_DIR) -Ideps/cosmocc/include -o $@ $(filter-out $(TIKTOKEN_GENERATED_HEADER) $(BUILD_DIR)/tiktoken_cpp.o, $^) $(BUILD_DIR)/tiktoken_cpp.o $(LDFLAGS)
-	@echo "✅ Tiktoken test build complete"
 
 # Update test_tiktoken target dependencies (depends on the built test binary)
 test_tiktoken: $(BUILD_DIR)/test_tiktoken
