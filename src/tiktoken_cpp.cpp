@@ -235,9 +235,9 @@ public:
                 }
                 
                 // Check if the token is in the vocabulary directly
-                auto vocab_it = token_vocab.find(token);
-                if (vocab_it != token_vocab.end()) {
-                    encoded_tokens.push_back(vocab_it->second);
+                auto direct_vocab_match = token_vocab.find(token);
+                if (direct_vocab_match != token_vocab.end()) {
+                    encoded_tokens.push_back(direct_vocab_match->second);
                     continue;
                 }
                 
