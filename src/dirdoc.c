@@ -177,7 +177,7 @@ char *get_default_output(const char *input_dir) {
     // Use basename() to extract the folder name.
     char *base = basename(dirpath);
     size_t len = strlen(base) + strlen("_documentation.md") + 1;
-    char *output = malloc(len);
+    char *output = (char*)malloc(len); // Explicit cast for C++ compatibility
     if (output) {
         snprintf(output, len, "%s_documentation.md", base);
     } else {
