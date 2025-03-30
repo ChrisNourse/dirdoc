@@ -2,7 +2,7 @@
 
 The output is a Markdown document summarizing a directoryâ€™s structure and file contents. It begins with token and size statistics, followed by a hierarchical view of the directory layout. For each file (unless omitted in structure-only mode), its contents are included in fenced code blocks with optional language annotations and metadata like file size, forming a complete, self-contained reference.
 
-Token Size: 3343
+Token Size: 5857
 
 # Directory Documentation: 
 
@@ -119,21 +119,7 @@ This is purely a demonstration project for dirdoc to document.
 ### ðŸ“„ example_project_documentation.md
 
 ```markdown
-# Sample Project
-
-This is a sample project to demonstrate the capabilities of dirdoc. It contains different file types, directory structures, and file contents that would be typical in a real software project.
-
-## Features
-
-- Multiple directories and file types
-- A mix of code and documentation
-- Examples of binary and text files
-- Basic project structure
-
-## Usage
-
-This is purely a demonstration project for dirdoc to document.
-```
+ XÏ÷v```
 
 ### ðŸ“„ src/example_main.c
 
