@@ -17,6 +17,10 @@ static tiktoken_t encoder = NULL;
  */
 bool init_tiktoken() {
     if (encoder == NULL) {
+        // Initialize the tiktoken library first
+        if (!tiktoken_init()) {
+            return false;
+        }
         // Initialize with cl100k_base encoding (GPT-4/3.5-turbo encoding)
         encoder = tiktoken_get_encoding("cl100k_base");
         return (encoder != NULL);
@@ -51,21 +55,28 @@ void calculate_token_stats(const char *str, DocumentInfo *info) {
     if (!init_tiktoken()) {
         // Fallback to approximate calculation if tiktoken fails
         size_t i = 0;
+        size_t word_count = 0;
+        
+        // Count words and punctuation separately
         while (i < len) {
             if (isspace((unsigned char)str[i])) {
                 i++;
                 continue;
             }
             if (isalnum((unsigned char)str[i]) || str[i] == '_') {
-                info->total_tokens++;
+                word_count++;
                 while (i < len && (isalnum((unsigned char)str[i]) || str[i] == '_')) {
                     i++;
                 }
             } else {
-                info->total_tokens++;
+                word_count++;  // Count punctuation as separate tokens
                 i++;
             }
         }
+        
+        // GPT tokenizers typically produce more tokens than words
+        // This is a conservative approximation that should match real tokenizers
+        info->total_tokens += (size_t)(word_count * 1.3);
         return;
     }
     
@@ -77,23 +88,27 @@ void calculate_token_stats(const char *str, DocumentInfo *info) {
     if (count >= 0) {
         info->total_tokens += (size_t)count;
     } else {
-        // Fallback if encoding failed
+        // Fallback if encoding failed - use same approximation as above
         size_t i = 0;
+        size_t word_count = 0;
+        
         while (i < len) {
             if (isspace((unsigned char)str[i])) {
                 i++;
                 continue;
             }
             if (isalnum((unsigned char)str[i]) || str[i] == '_') {
-                info->total_tokens++;
+                word_count++;
                 while (i < len && (isalnum((unsigned char)str[i]) || str[i] == '_')) {
                     i++;
                 }
             } else {
-                info->total_tokens++;
+                word_count++;
                 i++;
             }
         }
+        
+        info->total_tokens += (size_t)(word_count * 1.3);
     }
     
     // Free memory
@@ -179,13 +194,13 @@ const char *get_language_from_extension(const char *filename) {
  * Converts the file size into a more understandable unit (B, KB, MB, etc.).
  *
  * @param path The file path.
- * @return char* A string representing the file size, or "unknown" if the file cannot be accessed.
+ * @return const char* A string representing the file size, or "unknown" if the file cannot be accessed.
  */
-char *get_file_size(const char *path) {
-    static char size[32];
+const char *get_file_size(const char *path) {
+    static char size[32]; // Note: Using static buffer is not thread-safe
     struct stat st;
     if (stat(path, &st) != 0) {
-        return "unknown";
+        return "unknown"; // Returning const char* is fine
     }
     double size_bytes = st.st_size;
     const char *units[] = {"B", "KB", "MB", "GB", "TB"};

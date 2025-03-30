@@ -8,6 +8,7 @@
 #include "dirdoc.h"
 #include "writer.h"  // Include writer.h to set split options
 
+#if !defined(UNIT_TEST)
 /**
  * @brief Prints the help/usage information to stdout.
  */
@@ -35,7 +36,6 @@ static void print_help() {
            "  dirdoc --ignore \"temp/\" /path/to/dir          # Ignore the entire temp directory\n");
 }
 
-#ifndef UNIT_TEST
 /**
  * @brief Main entry point for the dirdoc application.
  *
@@ -146,7 +146,7 @@ int main(int argc, char *argv[]) {
 
     return result;
 }
-#endif  /* UNIT_TEST */
+#endif  /* !defined(UNIT_TEST) */
 
 /* 
  * Implementation of get_default_output()
@@ -177,7 +177,7 @@ char *get_default_output(const char *input_dir) {
     // Use basename() to extract the folder name.
     char *base = basename(dirpath);
     size_t len = strlen(base) + strlen("_documentation.md") + 1;
-    char *output = malloc(len);
+    char *output = (char*)malloc(len); // Explicit cast for C++ compatibility
     if (output) {
         snprintf(output, len, "%s_documentation.md", base);
     } else {

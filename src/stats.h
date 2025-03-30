@@ -37,7 +37,7 @@ const char *get_language_from_extension(const char *filename);
  * @param path: The file path.
  * @return: A string representing the file size.
  */
-char *get_file_size(const char *path);
+const char *get_file_size(const char *path);
 
 /* Checks if the file at the given path is binary.
  * @param path: The file path.

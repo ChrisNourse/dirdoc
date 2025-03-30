@@ -11,7 +11,7 @@
 // Helper: Escapes regex special characters in a string.
 static char *escape_regex(const char *str) {
     size_t len = strlen(str);
-    char *escaped = malloc(2 * len + 1); // worst-case: every character escaped
+    char *escaped = (char*)malloc(2 * len + 1); // worst-case: every character escaped
     if (!escaped) return NULL;
     char *dest = escaped;
     for (size_t i = 0; i < len; i++) {
@@ -33,7 +33,7 @@ static char *escape_regex(const char *str) {
 static char *translate_gitignore_pattern(const char *pattern, bool dir_only) {
     size_t len = strlen(pattern);
     // Allocate a buffer that is large enough for worst-case expansion.
-    char *regex_pattern = malloc(4 * len + 16); // Added extra space for directory pattern
+    char *regex_pattern = (char*)malloc(4 * len + 16); // Added extra space for directory pattern
     if (!regex_pattern) return NULL;
     char *dest = regex_pattern;
     
@@ -139,7 +139,7 @@ int parse_gitignore_pattern_string(const char *pattern_str, GitignoreList *list)
     // Ensure capacity in the GitignoreList
     if (list->count >= list->capacity) {
         size_t new_capacity = list->capacity ? list->capacity * 2 : 16;
-        GitignoreRule *new_rules = realloc(list->rules, new_capacity * sizeof(GitignoreRule));
+        GitignoreRule *new_rules = (GitignoreRule*)realloc(list->rules, new_capacity * sizeof(GitignoreRule));
         if (!new_rules) {
             regfree(&regex);
             free(pattern);
