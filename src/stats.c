@@ -55,21 +55,28 @@ void calculate_token_stats(const char *str, DocumentInfo *info) {
     if (!init_tiktoken()) {
         // Fallback to approximate calculation if tiktoken fails
         size_t i = 0;
+        size_t word_count = 0;
+        
+        // Count words and punctuation separately
         while (i < len) {
             if (isspace((unsigned char)str[i])) {
                 i++;
                 continue;
             }
             if (isalnum((unsigned char)str[i]) || str[i] == '_') {
-                info->total_tokens++;
+                word_count++;
                 while (i < len && (isalnum((unsigned char)str[i]) || str[i] == '_')) {
                     i++;
                 }
             } else {
-                info->total_tokens++;
+                word_count++;  // Count punctuation as separate tokens
                 i++;
             }
         }
+        
+        // GPT tokenizers typically produce more tokens than words
+        // A reasonable approximation is words * 1.3
+        info->total_tokens += (size_t)(word_count * 1.3);
         return;
     }
     
@@ -81,23 +88,27 @@ void calculate_token_stats(const char *str, DocumentInfo *info) {
     if (count >= 0) {
         info->total_tokens += (size_t)count;
     } else {
-        // Fallback if encoding failed
+        // Fallback if encoding failed - use same approximation as above
         size_t i = 0;
+        size_t word_count = 0;
+        
         while (i < len) {
             if (isspace((unsigned char)str[i])) {
                 i++;
                 continue;
             }
             if (isalnum((unsigned char)str[i]) || str[i] == '_') {
-                info->total_tokens++;
+                word_count++;
                 while (i < len && (isalnum((unsigned char)str[i]) || str[i] == '_')) {
                     i++;
                 }
             } else {
-                info->total_tokens++;
+                word_count++;
                 i++;
             }
         }
+        
+        info->total_tokens += (size_t)(word_count * 1.3);
     }
     
     // Free memory
