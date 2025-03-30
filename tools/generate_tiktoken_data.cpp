@@ -8,8 +8,7 @@
 #include <map>
 
 // Include base64 functions from the main project source
-// Adjust path if necessary based on where this tool is compiled from
-#include "../src/base64.h"
+#include "base64.h"
 
 // Define the known special tokens for cl100k_base and their IDs
 // We need their base64 representation to find them in the input file
