@@ -10,7 +10,17 @@ TEST_DIR  = tests
 
 # Compiler and Flags
 CC = $(DEPS_DIR)/cosmocc/bin/cosmocc
-CFLAGS = -g -O2 -Ideps/cosmocc/include $(TIKTOKEN_INCLUDE)
+CXX = $(DEPS_DIR)/cosmocc/bin/cosmoc++
+
+# Common compiler flags for both C and C++
+COMMON_FLAGS = -g -O2 -Ideps/cosmocc/include
+
+# C-specific flags (no TIKTOKEN_INCLUDE as it's C++ specific)
+CFLAGS = $(COMMON_FLAGS)
+
+# C++-specific flags
+CXXFLAGS = $(COMMON_FLAGS) $(TIKTOKEN_INCLUDE)
+
 LDFLAGS = $(TIKTOKEN_LDFLAGS)
 
 # Tiktoken integration (downloading data file directly)
@@ -33,9 +43,6 @@ COSMO_ZIP     = cosmocc-4.0.2.zip
 SOURCES = $(wildcard $(SRC_DIR)/*.c)
 # Object files: compile each source file into an object file in $(BUILD_DIR)
 OBJECTS = $(patsubst $(SRC_DIR)/%.c, $(BUILD_DIR)/%.o, $(SOURCES))
-
-# C++ compiler
-CXX = $(DEPS_DIR)/cosmocc/bin/cosmoc++
 
 # Ensure dirdoc.o is linked last (it provides get_default_output)
 DIRDOC_OBJ = $(BUILD_DIR)/dirdoc.o
@@ -118,7 +125,7 @@ $(TIKTOKEN_GEN_TOOL_EXE): $(TIKTOKEN_GEN_TOOL_OBJ) | $(BUILD_DIR) deps_cosmo
 # Rule to compile the generator tool object file
 $(TIKTOKEN_GEN_TOOL_OBJ): $(TIKTOKEN_GEN_TOOL_SRC) | $(BUILD_DIR) deps_cosmo
 	@echo "⏳ Compiling generator tool $<..."
-	$(CXX) $(CFLAGS) -I$(SRC_DIR) -c $< -o $@ # Include src for base64.h
+	$(CXX) $(CXXFLAGS) -I$(SRC_DIR) -c $< -o $@ # Include src for base64.h
 	@echo "✅ Generator tool compiled."
 
 
@@ -141,7 +148,7 @@ $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c | $(BUILD_DIR)
 
 # Compile main C++ files, ensuring tiktoken_cpp.o depends on the generated header
 $(BUILD_DIR)/tiktoken_cpp.o: $(SRC_DIR)/tiktoken_cpp.cpp $(TIKTOKEN_GENERATED_HEADER) | $(BUILD_DIR)
-	$(CXX) $(CFLAGS) -c $(SRC_DIR)/tiktoken_cpp.cpp -o $@
+	$(CXX) $(CXXFLAGS) -c $(SRC_DIR)/tiktoken_cpp.cpp -o $@
 
 # Compile test source files into object files
 $(BUILD_DIR)/test_%.o: $(TEST_DIR)/%.c | $(BUILD_DIR)
@@ -217,4 +224,3 @@ help:
 	@echo "  clean_temp  - Remove all temporary test files from the 'tmp' directory"
 	@echo "  samples     - Create a sample project structure to demonstrate dirdoc"
 	@echo "  help        - Show this help message"
-	
