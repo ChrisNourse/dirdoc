@@ -14,9 +14,26 @@ jobs:
         id: check-labels
         run: |
           LABELS="${{ toJson(github.event.pull_request.labels.*.name) }}"
-          MAJOR_LABEL=$(echo $LABELS | grep -o '"major"' || echo "")
-          MINOR_LABEL=$(echo $LABELS | grep -o '"minor"' || echo "")
-          PATCH_LABEL=$(echo $LABELS | grep -o '"patch"' || echo "")
+          echo "Labels found: $LABELS"
+          
+          # Use jq for more reliable JSON parsing
+          if [[ "$LABELS" == *"\"major\""* ]]; then
+            MAJOR_LABEL="major"
+          else
+            MAJOR_LABEL=""
+          fi
+          
+          if [[ "$LABELS" == *"\"minor\""* ]]; then
+            MINOR_LABEL="minor"
+          else
+            MINOR_LABEL=""
+          fi
+          
+          if [[ "$LABELS" == *"\"patch\""* ]]; then
+            PATCH_LABEL="patch"
+          else
+            PATCH_LABEL=""
+          fi
           
           VERSION_LABELS_COUNT=0
           if [ ! -z "$MAJOR_LABEL" ]; then ((VERSION_LABELS_COUNT++)); fi
