@@ -31,21 +31,39 @@ def main():
     
     # Extract regular vocabulary
     vocab = {}
-    for token_id, token_bytes in enumerate(encoding._tokens):
-        # Skip if it's a special token ID
-        if token_id in encoding._special_tokens.values():
-            continue
-        # Convert token bytes to base64
+    pat_b = [x for x in range(encoding.n_vocab) if x not in encoding._special_tokens.values()]
+    
+    for token_id in pat_b:
+        # Get the token bytes
+        token_bytes = encoding.decode_single_token_bytes(token_id)
+        # Convert to base64
         token_b64 = base64.b64encode(token_bytes).decode('ascii')
         vocab[token_b64] = token_id
     
-    # Extract BPE merges
+    # Try to extract BPE merges
     merges = []
-    for (first, second), rank in encoding._mergeable_ranks.items():
-        # Convert merge parts to base64
-        first_b64 = base64.b64encode(first.encode('utf-8')).decode('ascii')
-        second_b64 = base64.b64encode(second.encode('utf-8')).decode('ascii')
-        merges.append((first_b64, second_b64, rank))
+    try:
+        # First attempt to access _mergeable_ranks directly
+        if hasattr(encoding, '_mergeable_ranks'):
+            for (first, second), rank in encoding._mergeable_ranks.items():
+                # Convert merge parts to base64
+                first_b64 = base64.b64encode(first.encode('utf-8')).decode('ascii')
+                second_b64 = base64.b64encode(second.encode('utf-8')).decode('ascii')
+                merges.append((first_b64, second_b64, rank))
+        elif hasattr(encoding, 'mergeable_ranks'):
+            # Try alternative attribute
+            for (first, second), rank in encoding.mergeable_ranks.items():
+                first_b64 = base64.b64encode(first.encode('utf-8')).decode('ascii')
+                second_b64 = base64.b64encode(second.encode('utf-8')).decode('ascii')
+                merges.append((first_b64, second_b64, rank))
+        else:
+            # If we couldn't access merges, log a warning
+            print("Warning: Could not access BPE merges. Tokenization may be incomplete.")
+            # We'll still continue without the merges - tokenization will be less accurate
+            # but we can still do basic tokenization
+    except Exception as e:
+        print(f"Warning: Error accessing BPE merges: {e}")
+        print("Continuing without merge data. Tokenization will be approximated.")
    
     # Create data structure
     data = {
