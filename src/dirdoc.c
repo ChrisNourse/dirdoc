@@ -8,7 +8,7 @@
 #include "dirdoc.h"
 #include "writer.h"  // Include writer.h to set split options
 
-#ifndef UNIT_TEST
+#if !defined(UNIT_TEST)
 /**
  * @brief Prints the help/usage information to stdout.
  */
@@ -146,7 +146,7 @@ int main(int argc, char *argv[]) {
 
     return result;
 }
-#endif  /* UNIT_TEST */
+#endif  /* !defined(UNIT_TEST) */
 
 /* 
  * Implementation of get_default_output()

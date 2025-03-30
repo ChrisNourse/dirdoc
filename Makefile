@@ -168,8 +168,12 @@ $(BUILD_DIR)/dirdoc: $(DIRDOC_LINK_OBJS) $(DIRDOC_OBJ) | deps
 	$(CXX) $(LDFLAGS) -o $@ $(DIRDOC_LINK_OBJS) $(DIRDOC_OBJ)
 	@echo "✅ Build complete"
 
-# Link test objects and application objects for the main test executable
-$(BUILD_DIR)/dirdoc_test: $(OBJECTS) $(MAIN_CPP_OBJECTS) $(TEST_OBJECTS) $(TIKTOKEN_GENERATED_HEADER) | $(BUILD_DIR) deps
+# Test-specific version of dirdoc.o that gets compiled with the UNIT_TEST define
+$(BUILD_DIR)/dirdoc_test.o: $(SRC_DIR)/dirdoc.c | $(BUILD_DIR)
+	$(CC) $(CFLAGS) $(TEST_CFLAGS) -c $< -o $@
+
+# Link test objects and application objects for the main test executable - using test-specific dirdoc_test.o
+$(BUILD_DIR)/dirdoc_test: $(filter-out $(BUILD_DIR)/dirdoc.o, $(OBJECTS)) $(BUILD_DIR)/dirdoc_test.o $(MAIN_CPP_OBJECTS) $(TEST_OBJECTS) $(TIKTOKEN_GENERATED_HEADER) | $(BUILD_DIR) deps
 	@echo "⏳ Linking test executable..."
 	$(CXX) $(LDFLAGS) -o $@ $(filter-out $(TIKTOKEN_GENERATED_HEADER), $^)
 	@echo "✅ Test link complete"
