@@ -33,7 +33,7 @@ static char *escape_regex(const char *str) {
 static char *translate_gitignore_pattern(const char *pattern, bool dir_only) {
     size_t len = strlen(pattern);
     // Allocate a buffer that is large enough for worst-case expansion.
-    char *regex_pattern = malloc(4 * len + 16); // Added extra space for directory pattern
+    char *regex_pattern = (char*)malloc(4 * len + 16); // Added extra space for directory pattern
     if (!regex_pattern) return NULL;
     char *dest = regex_pattern;
     
