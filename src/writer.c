@@ -5,6 +5,7 @@
 #include <dirent.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <fcntl.h>
 
 #include "writer.h"
 #include "scanner.h"
@@ -530,6 +531,15 @@ int document_directory(const char *input_dir, const char *output_file, int flags
     
     // Use the provided output_file if available; otherwise, get the default (dynamically allocated)
     char *out_path = output_file ? (char *)output_file : get_default_output(input_dir);
+    
+    // Check if the file already exists and remove it
+    if (access(out_path, F_OK) == 0) {
+        fprintf(stderr, "⚠️  Existing documentation file found: '%s'. Removing...\n", out_path);
+        if (remove(out_path) != 0) {
+            fprintf(stderr, "Error: Could not remove existing output file '%s'\n", out_path);
+            // Continue anyway, as we'll attempt to overwrite it
+        }
+    }
     
     fprintf(stderr, "⏳ Scanning directory '%s'...\n", input_dir);
     FileList files;
