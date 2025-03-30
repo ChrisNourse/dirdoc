@@ -47,7 +47,7 @@ int test_delete_existing_file() {
     // The file might have been split, so check for either the original file
     // or a split version (with _part1 suffix)
     char split_file[MAX_PATH_LEN];
-    snprintf(split_file, sizeof(split_file), "%s_part1.md", test_dir);
+    snprintf(split_file, sizeof(split_file), "%s/test_output_part1.md", test_dir);
     
     if (access(output_file, F_OK) != 0 && access(split_file, F_OK) != 0) {
         printf("Error: Neither original output file (%s) nor split file (%s) exists\n", 
@@ -63,7 +63,7 @@ int test_delete_existing_file() {
     } else {
         // Try the split file
         char split_file[MAX_PATH_LEN];
-        snprintf(split_file, sizeof(split_file), "%s_part1.md", test_dir);
+        snprintf(split_file, sizeof(split_file), "%s/test_output_part1.md", test_dir);
         if (access(split_file, F_OK) == 0) {
             file_to_check = strdup(split_file);
         }
@@ -87,7 +87,7 @@ int test_delete_existing_file() {
     } else {
         // Try to remove the split file if it exists
         char split_file[MAX_PATH_LEN];
-        snprintf(split_file, sizeof(split_file), "%s_part1.md", test_dir);
+        snprintf(split_file, sizeof(split_file), "%s/test_output_part1.md", test_dir);
         if (access(split_file, F_OK) == 0) {
             remove(split_file);
         }
