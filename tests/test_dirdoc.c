@@ -20,7 +20,7 @@
 void test_smart_split();
 void run_tiktoken_tests();
 void run_split_tests();
-int run_file_deletion_tests();
+int run_file_deletion_tests(void);
 
 #ifndef MAX_PATH_LEN
 #define MAX_PATH_LEN 4096

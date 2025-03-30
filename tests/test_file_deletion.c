@@ -61,7 +61,7 @@ int test_delete_existing_file() {
 }
 
 // Function to run all file deletion tests
-int run_file_deletion_tests() {
+int run_file_deletion_tests(void) {
     int errors = 0;
     
     errors += test_delete_existing_file();
