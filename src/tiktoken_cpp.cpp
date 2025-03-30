@@ -234,7 +234,7 @@ public:
                     continue;
                 }
                 
-                // For ASCII, approximate each word as ~1.3 tokens
+                // For ASCII, use a more precise token estimation algorithm
                 bool is_ascii = true;
                 for (unsigned char c : token) {
                     if (c > 127) {
@@ -244,15 +244,27 @@ public:
                 }
                 
                 if (is_ascii) {
-                    // For ASCII, tokenize at word level
-                    if (token.length() <= 4) {
-                        // Short ascii tokens are usually one token
+                    // For ASCII tokens
+                    if (token.length() <= 4 || isdigit(token[0])) {
+                        // Short ascii tokens and numbers are usually one token
                         bpe_tokens.push_back(token);
+                    } else if (ispunct(token[0])) {
+                        // Punctuation is usually one token per character
+                        for (char c : token) {
+                            bpe_tokens.push_back(std::string(1, c));
+                        }
                     } else {
-                        // Split longer tokens into ~4 character chunks
-                        // which approximates GPT tokenization for common words
-                        for (size_t i = 0; i < token.length(); i += 3) {
-                            bpe_tokens.push_back(token.substr(i, std::min(size_t(3), token.length() - i)));
+                        // For typical English words, most common words are 1-2 tokens
+                        // Very roughly: ~1 token per 4-5 characters
+                        if (token.length() <= 8) {
+                            // Most common words (up to 8 chars) are ~1-2 tokens
+                            bpe_tokens.push_back(token);
+                        } else {
+                            // Longer words typically break into chunks
+                            // Use approximately 4 chars per token
+                            for (size_t i = 0; i < token.length(); i += 4) {
+                                bpe_tokens.push_back(token.substr(i, std::min(size_t(4), token.length() - i)));
+                            }
                         }
                     }
                 } else {
