@@ -234,12 +234,7 @@ public:
                     continue;
                 }
                 
-                // Check if the token is in the vocabulary directly
-                auto direct_vocab_match = token_vocab.find(token);
-                if (direct_vocab_match != token_vocab.end()) {
-                    encoded_tokens.push_back(direct_vocab_match->second);
-                    continue;
-                }
+                // We already checked this token in the vocabulary
                 
                 // Otherwise use a fallback approach
                 bool is_ascii = true;
