@@ -75,8 +75,9 @@ int run_file_deletion_tests(void) {
     }
 }
 
+/* Only define main when explicitly building this file as standalone */
 #ifdef FILE_DELETION_STANDALONE
-int main() {
+int main(void) {
     return run_file_deletion_tests();
 }
 #endif
