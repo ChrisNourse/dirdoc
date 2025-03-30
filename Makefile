@@ -50,9 +50,6 @@ DIRDOC_LINK_OBJS = $(filter-out $(DIRDOC_OBJ), $(OBJECTS)) $(MAIN_CPP_OBJECTS)
 
 .PHONY: all clean super_clean deps deps_cosmo help test build_temp clean_temp samples test_tiktoken tools
 
-# Target for building tools
-tools: $(TIKTOKEN_GEN_TOOL_EXE)
-
 # Main build target depends on the final binary
 all: $(BUILD_DIR)/dirdoc
 	@echo "✅ Build completed successfully"
@@ -61,6 +58,10 @@ all: $(BUILD_DIR)/dirdoc
 
 # Combined dependencies target (only Cosmo now)
 deps: deps_cosmo
+
+
+# Target for building tools
+tools: $(TIKTOKEN_GEN_TOOL_EXE)
 
 # Cosmopolitan dependency target
 deps_cosmo: $(CC)
