@@ -257,10 +257,10 @@ public:
 }  // namespace tiktoken
 
 // This is our C interface for the BpeEncoder
-extern "C" {
 #include "tiktoken.h"
 
 // This struct holds the C++ encoder object
+extern "C" {
 struct TiktokenWrapper {
     tiktoken::BpeEncoder* encoder;
     bool initialized;
