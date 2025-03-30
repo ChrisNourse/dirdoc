@@ -43,8 +43,8 @@ jobs:
           fi
           echo "Current version: $LATEST_TAG"
           
-          # Remove 'v' prefix if present
-          VERSION=${LATEST_TAG#v}
+          # Use tag as is (no v prefix in our versioning)
+          VERSION=$LATEST_TAG
           
           # Split version into components
           IFS='.' read -r -a VERSION_PARTS <<< "$VERSION"
