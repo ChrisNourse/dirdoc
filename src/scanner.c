@@ -35,7 +35,7 @@ void init_file_list(FileList *list) {
 void add_file_entry(FileList *list, const char *path, bool is_dir, int depth) {
     if (list->count >= list->capacity) {
         list->capacity *= 2;
-        list->entries = realloc(list->entries, list->capacity * sizeof(FileEntry));
+        list->entries = (FileEntry*)realloc(list->entries, list->capacity * sizeof(FileEntry));
     }
     
     FileEntry *entry = &list->entries[list->count++];
