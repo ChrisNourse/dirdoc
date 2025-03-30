@@ -4,6 +4,64 @@ This document provides instructions on how to build, test, and maintain the dird
 
 ---
 
+## Creating a Release
+
+The project is configured with GitHub Actions to automatically build and publish releases when you push a version tag. Here's how to create a new release:
+
+### 1. Ensure Everything is Ready
+
+Before creating a release:
+
+- Make sure all desired changes are committed and pushed to the main branch.
+- Verify that the code builds and tests pass locally:
+  ```bash
+  make clean
+  make all
+  make test
+  ```
+
+### 2. Create and Push a Version Tag
+
+The GitHub workflow is triggered when a tag with a version number format (e.g., `1.0.0`, `v1.2.3`) is pushed to the repository:
+
+```bash
+# 1. Create the tag locally (choose an appropriate version number)
+git tag 1.0.0
+
+# 2. Push the tag to GitHub
+git push origin 1.0.0
+```
+
+Alternatively, if you prefer to use the `v` prefix in your version numbers:
+
+```bash
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+### 3. Monitor the Release Process
+
+After pushing the tag:
+
+1. GitHub Actions will automatically start the release workflow
+2. The workflow will:
+   - Build the project
+   - Create a release binary for Linux/macOS
+   - Create a Windows-compatible .exe file
+   - Create a GitHub Release with these binaries attached
+
+You can monitor the progress of the workflow in the "Actions" tab of your GitHub repository.
+
+### 4. Verify the Release
+
+Once the workflow completes successfully:
+
+1. Go to the "Releases" section of your GitHub repository
+2. Verify that the new release appears with the correct version number
+3. Confirm that both the `dirdoc` and `dirdoc.exe` binaries are attached to the release
+
+---
+
 ## Prerequisites
 
 Before building the project, ensure that your environment has the following:
