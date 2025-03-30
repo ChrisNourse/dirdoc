@@ -27,7 +27,8 @@ LDFLAGS = $(TIKTOKEN_LDFLAGS)
 TIKTOKEN_ENCODER_NAME = cl100k_base# Or change to gpt2, r50k_base, p50k_base, p50k_edit, etc.
 TIKTOKEN_BASE_URL = https://openaipublic.blob.core.windows.net/encodings
 TIKTOKEN_DATA_URL = $(TIKTOKEN_BASE_URL)/$(TIKTOKEN_ENCODER_NAME).tiktoken
-TIKTOKEN_DOWNLOADED_FILE = $(BUILD_DIR)/$(TIKTOKEN_ENCODER_NAME).tiktoken # Store downloaded file in build dir
+TIKTOKEN_DATA_DIR = $(DEPS_DIR)/tiktoken
+TIKTOKEN_DOWNLOADED_FILE = $(TIKTOKEN_DATA_DIR)/$(TIKTOKEN_ENCODER_NAME).tiktoken
 TIKTOKEN_GEN_TOOL_SRC = $(TOOLS_DIR)/generate_tiktoken_data.cpp
 TIKTOKEN_GEN_TOOL_OBJ = $(BUILD_DIR)/generate_tiktoken_data.o
 TIKTOKEN_GEN_TOOL_EXE = $(BUILD_DIR)/generate_tiktoken_data
@@ -70,7 +71,7 @@ TEST_TIKTOKEN_OBJ = $(patsubst %.c, $(BUILD_DIR)/test_%.o, $(TEST_TIKTOKEN_SRCS)
 TIKTOKEN_TEST_DEPS = $(BUILD_DIR)/tiktoken.o $(BUILD_DIR)/stats.o $(BUILD_DIR)/tiktoken_cpp.o
 
 
-.PHONY: all clean super_clean deps deps_cosmo help test build_temp clean_temp test_tiktoken tools
+.PHONY: all clean super_clean deps deps_cosmo help test build_temp clean_temp test_tiktoken tools download_tiktoken
 
 # Main build target depends on the final binary
 all: $(BUILD_DIR)/dirdoc
@@ -79,20 +80,25 @@ all: $(BUILD_DIR)/dirdoc
 	@echo "🚀 Run ./$(BUILD_DIR)/dirdoc --help for usage"
 
 # Combined dependencies target (only Cosmo now)
-deps: deps_cosmo
-
+deps: ensure_dirs deps_cosmo download_tiktoken
 
 # Target for building tools
-tools: $(TIKTOKEN_GEN_TOOL_EXE)
+tools: ensure_dirs $(TIKTOKEN_GEN_TOOL_EXE)
+
+# Ensure all required directories exist
+ensure_dirs:
+	@mkdir -p $(BUILD_DIR)
+	@mkdir -p $(DEPS_DIR)
+	@mkdir -p $(TIKTOKEN_DATA_DIR)
+	@mkdir -p $(DEPS_DIR)/cosmocc/bin
 
 # Cosmopolitan dependency target
-deps_cosmo: $(CC)
+deps_cosmo: ensure_dirs $(CC)
 
 $(CC): $(DEPS_DIR)/$(COSMO_ZIP)
 	@echo "⏳ Checking cosmocc..."
 	@if [ ! -f "$(CC)" ]; then \
 		echo "⏳ Unpacking $(COSMO_ZIP)..."; \
-		mkdir -p $(DEPS_DIR)/cosmocc/bin; \
 		unzip -q $(DEPS_DIR)/$(COSMO_ZIP) -d $(DEPS_DIR)/cosmocc; \
 		chmod +x $(CC); \
 		echo "✅ Cosmopolitan dependencies setup complete."; \
@@ -100,92 +106,107 @@ $(CC): $(DEPS_DIR)/$(COSMO_ZIP)
 		echo "✅ cosmocc already exists, skipping unzip"; \
 	fi
 
-# Target to download the tiktoken data file
-$(TIKTOKEN_DOWNLOADED_FILE): | $(BUILD_DIR)
-	@echo "⏳ Checking for tiktoken data file $(TIKTOKEN_DOWNLOADED_FILE)..."
-	@if [ ! -f "$@" ]; then \
+# Phony target for tiktoken data to help debugging
+.PHONY: download_tiktoken
+download_tiktoken: ensure_dirs $(TIKTOKEN_DOWNLOADED_FILE)
+
+# Target to download the tiktoken data file - used touch to create empty file if download fails
+.INTERMEDIATE: $(TIKTOKEN_DOWNLOADED_FILE).tmp
+$(TIKTOKEN_DOWNLOADED_FILE).tmp:
+	@touch $@
+
+# The actual tiktoken data file target with verbose debug info
+$(TIKTOKEN_DOWNLOADED_FILE): ensure_dirs
+	@echo "⏳ Checking for tiktoken data file at: $(TIKTOKEN_DOWNLOADED_FILE)"
+	@echo "  Data dir exists: $$([ -d "$(TIKTOKEN_DATA_DIR)" ] && echo "YES" || echo "NO")"
+	@echo "  File exists: $$([ -f "$(TIKTOKEN_DOWNLOADED_FILE)" ] && echo "YES" || echo "NO")"
+	@if [ ! -f "$(TIKTOKEN_DOWNLOADED_FILE)" ]; then \
 		echo "📦 Downloading tiktoken data from $(TIKTOKEN_DATA_URL)..."; \
-		curl -L -o $@ "$(TIKTOKEN_DATA_URL)"; \
-		echo "✅ Tiktoken data file downloaded."; \
+		curl -L -s -o "$(TIKTOKEN_DOWNLOADED_FILE)" "$(TIKTOKEN_DATA_URL)" || touch "$(TIKTOKEN_DOWNLOADED_FILE).failed"; \
+		if [ -f "$(TIKTOKEN_DOWNLOADED_FILE).failed" ]; then \
+			echo "❌ Download failed!"; \
+			rm -f "$(TIKTOKEN_DOWNLOADED_FILE).failed"; \
+			exit 1; \
+		fi; \
+		echo "✅ Tiktoken data file downloaded to $(TIKTOKEN_DOWNLOADED_FILE)"; \
+		ls -la "$(TIKTOKEN_DOWNLOADED_FILE)"; \
 	else \
-		echo "✅ Tiktoken data file already exists, skipping download"; \
+		echo "✅ Tiktoken data file already exists at $(TIKTOKEN_DOWNLOADED_FILE), size: $$(du -h "$(TIKTOKEN_DOWNLOADED_FILE)" | cut -f1)"; \
+		ls -la "$(TIKTOKEN_DOWNLOADED_FILE)"; \
 	fi
+	@touch $(TIKTOKEN_DOWNLOADED_FILE)
 
 # Target to generate the tiktoken C header from the downloaded repo data
 # Requires the compiled C++ generator tool and the downloaded data file.
-$(TIKTOKEN_GENERATED_HEADER): $(TIKTOKEN_GEN_TOOL_EXE) $(TIKTOKEN_DOWNLOADED_FILE) | $(BUILD_DIR)
+$(TIKTOKEN_GENERATED_HEADER): $(TIKTOKEN_GEN_TOOL_EXE) $(TIKTOKEN_DOWNLOADED_FILE)
 	@echo "⏳ Generating tiktoken C header $(TIKTOKEN_GENERATED_HEADER)..."
-	@if [ ! -f "$@" ] || [ "$(TIKTOKEN_DOWNLOADED_FILE)" -nt "$@" ]; then \
+	@if [ ! -f "$(TIKTOKEN_GENERATED_HEADER)" ] || [ "$(TIKTOKEN_DOWNLOADED_FILE)" -nt "$(TIKTOKEN_GENERATED_HEADER)" ]; then \
 		echo "⚙️ Running $(TIKTOKEN_GEN_TOOL_EXE)..."; \
-		./$(TIKTOKEN_GEN_TOOL_EXE) $(TIKTOKEN_DOWNLOADED_FILE) $@ $(TIKTOKEN_ENCODER_NAME); \
+		./$(TIKTOKEN_GEN_TOOL_EXE) "$(TIKTOKEN_DOWNLOADED_FILE)" "$(TIKTOKEN_GENERATED_HEADER)" $(TIKTOKEN_ENCODER_NAME); \
 		echo "✅ Tiktoken C header generation complete."; \
 	else \
 		echo "✅ Tiktoken C header already exists and is up to date, skipping generation"; \
 	fi
 
 # Rule to build the generator tool executable
-$(TIKTOKEN_GEN_TOOL_EXE): $(TIKTOKEN_GEN_TOOL_OBJ) | $(BUILD_DIR) deps_cosmo
+$(TIKTOKEN_GEN_TOOL_EXE): $(TIKTOKEN_GEN_TOOL_OBJ) | deps_cosmo
 	@echo "⏳ Linking generator tool $(TIKTOKEN_GEN_TOOL_EXE)..."
-	$(CXX) $(LDFLAGS) -o $@ $^
+	$(CXX) $(LDFLAGS) -o $@ $(TIKTOKEN_GEN_TOOL_OBJ)
 	@echo "✅ Generator tool linked."
 
 # Rule to compile the generator tool object file
-$(TIKTOKEN_GEN_TOOL_OBJ): $(TIKTOKEN_GEN_TOOL_SRC) | $(BUILD_DIR) deps_cosmo
+$(TIKTOKEN_GEN_TOOL_OBJ): $(TIKTOKEN_GEN_TOOL_SRC) | deps_cosmo
 	@echo "⏳ Compiling generator tool $<..."
 	$(CXX) $(CXXFLAGS) -I$(SRC_DIR) -c $< -o $@ # Include src for base64.h
 	@echo "✅ Generator tool compiled."
 
 
-$(DEPS_DIR)/$(COSMO_ZIP):
-	@mkdir -p $(DEPS_DIR)
+$(DEPS_DIR)/$(COSMO_ZIP): ensure_dirs
 	@if [ ! -f "$(DEPS_DIR)/$(COSMO_ZIP)" ]; then \
 		echo "📦 Fetching Cosmopolitan 4.0.2 dependencies..."; \
-		curl -L $(COSMO_ZIP_URL) -o $(DEPS_DIR)/$(COSMO_ZIP); \
+		curl -L -o $(DEPS_DIR)/$(COSMO_ZIP) $(COSMO_ZIP_URL); \
 		echo "✅ Downloaded $(COSMO_ZIP)"; \
 	else \
 		echo "✅ $(COSMO_ZIP) already exists, skipping download"; \
 	fi
 
-$(BUILD_DIR):
-	mkdir -p $(BUILD_DIR)
-
 # Compile each source file into an object file.
-$(BUILD_DIR)/%.o: $(SRC_DIR)/%.c | $(BUILD_DIR)
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.c deps
 	$(CC) $(CFLAGS) -c $< -o $@
 
 # Compile main C++ files, ensuring tiktoken_cpp.o depends on the generated header
-$(BUILD_DIR)/tiktoken_cpp.o: $(SRC_DIR)/tiktoken_cpp.cpp $(TIKTOKEN_GENERATED_HEADER) | $(BUILD_DIR)
+$(BUILD_DIR)/tiktoken_cpp.o: $(SRC_DIR)/tiktoken_cpp.cpp $(TIKTOKEN_GENERATED_HEADER) deps
 	$(CXX) $(CXXFLAGS) -c $(SRC_DIR)/tiktoken_cpp.cpp -o $@
 
 # Compile test source files into object files
-$(BUILD_DIR)/test_%.o: $(TEST_DIR)/%.c | $(BUILD_DIR)
+$(BUILD_DIR)/test_%.o: $(TEST_DIR)/%.c deps
 	$(CC) $(CFLAGS) $(TEST_CFLAGS) -c $< -o $@
 
 # Link all object files together for the main executable, ensuring dirdoc.o is last.
 # Make sure the generated header exists before linking.
-$(BUILD_DIR)/dirdoc: $(DIRDOC_LINK_OBJS) $(DIRDOC_OBJ) | deps
+$(BUILD_DIR)/dirdoc: $(DIRDOC_LINK_OBJS) $(DIRDOC_OBJ) deps
 	@echo "⏳ Linking dirdoc..."
 	$(CXX) $(LDFLAGS) -o $@ $(DIRDOC_LINK_OBJS) $(DIRDOC_OBJ)
 	@echo "✅ Build complete"
 
 # Test-specific version of dirdoc.o that gets compiled with the UNIT_TEST define
-$(BUILD_DIR)/dirdoc_test.o: $(SRC_DIR)/dirdoc.c | $(BUILD_DIR)
+$(BUILD_DIR)/dirdoc_test.o: $(SRC_DIR)/dirdoc.c deps
 	$(CC) $(CFLAGS) $(TEST_CFLAGS) -c $< -o $@
 
 # Link test objects and application objects for the main test executable - using test-specific dirdoc_test.o
-$(BUILD_DIR)/dirdoc_test: $(filter-out $(BUILD_DIR)/dirdoc.o, $(OBJECTS)) $(BUILD_DIR)/dirdoc_test.o $(MAIN_CPP_OBJECTS) $(TEST_OBJECTS) $(TIKTOKEN_GENERATED_HEADER) | $(BUILD_DIR) deps
+$(BUILD_DIR)/dirdoc_test: $(filter-out $(BUILD_DIR)/dirdoc.o, $(OBJECTS)) $(BUILD_DIR)/dirdoc_test.o $(MAIN_CPP_OBJECTS) $(TEST_OBJECTS) $(TIKTOKEN_GENERATED_HEADER) deps
 	@echo "⏳ Linking test executable..."
 	$(CXX) $(LDFLAGS) -o $@ $(filter-out $(TIKTOKEN_GENERATED_HEADER), $^)
 	@echo "✅ Test link complete"
 
 # Link test objects and application objects for the temp test executable
-$(BUILD_DIR)/temp_test: $(filter-out $(DIRDOC_OBJ), $(OBJECTS)) $(MAIN_CPP_OBJECTS) $(TEST_OBJECTS) $(TIKTOKEN_GENERATED_HEADER) | $(BUILD_DIR) deps
+$(BUILD_DIR)/temp_test: $(filter-out $(DIRDOC_OBJ), $(OBJECTS)) $(MAIN_CPP_OBJECTS) $(TEST_OBJECTS) $(TIKTOKEN_GENERATED_HEADER) deps
 	@echo "⏳ Linking temp test executable..."
 	$(CXX) $(LDFLAGS) -DINSPECT_TEMP -o $@ $(filter-out $(TIKTOKEN_GENERATED_HEADER), $^)
 	@echo "✅ Temp test link complete"
 
 # Link tiktoken test objects with required application objects
-$(BUILD_DIR)/test_tiktoken: $(TEST_TIKTOKEN_OBJ) $(TIKTOKEN_TEST_DEPS) $(TIKTOKEN_GENERATED_HEADER) | $(BUILD_DIR) deps
+$(BUILD_DIR)/test_tiktoken: $(TEST_TIKTOKEN_OBJ) $(TIKTOKEN_TEST_DEPS) $(TIKTOKEN_GENERATED_HEADER) deps
 	@echo "⏳ Linking tiktoken test executable..."
 	$(CXX) $(LDFLAGS) -o $@ $(filter-out $(TIKTOKEN_GENERATED_HEADER), $^)
 	@echo "✅ Tiktoken test link complete"
@@ -204,9 +225,9 @@ test: $(BUILD_DIR)/dirdoc_test
 	./$(BUILD_DIR)/dirdoc_test
 
 # Keep test_tiktoken target for backward compatibility, but make it use the main test binary
-test_tiktoken: $(BUILD_DIR)/dirdoc_test
+test_tiktoken: $(BUILD_DIR)/test_tiktoken
 	@echo "🚀 Running tiktoken tests only..."
-	./$(BUILD_DIR)/dirdoc_test --test-tiktoken-only
+	./$(BUILD_DIR)/test_tiktoken
 
 clean:
 	@echo "⏳ Cleaning build artifacts..."
@@ -220,16 +241,16 @@ super_clean:
 
 help:
 	@echo "Available targets:"
-	@echo "  all         - Build the dirdoc application (downloads deps, generates header)"
-	@echo "  deps        - Download and set up dependencies (Cosmopolitan)"
-	@echo "  deps_cosmo  - Download and set up Cosmopolitan dependency"
-	@echo "  tools       - Build helper tools (e.g., tiktoken data generator)"
-	@echo "  $(TIKTOKEN_DOWNLOADED_FILE) - Download the tiktoken data file"
+	@echo "  all             - Build the dirdoc application (downloads deps, generates header)"
+	@echo "  deps            - Download and set up dependencies (Cosmopolitan)"
+	@echo "  deps_cosmo      - Download and set up Cosmopolitan dependency"
+	@echo "  tools           - Build helper tools (e.g., tiktoken data generator)"
+	@echo "  download_tiktoken - Download the tiktoken data file (debug information and verbose output)"
 	@echo "  $(TIKTOKEN_GENERATED_HEADER) - Generate the tiktoken C header (requires compiled C++ tool and downloaded data)"
-	@echo "  clean       - Remove build artifacts (including tools and downloaded data)"
-	@echo "  super_clean - Remove build artifacts and dependencies"
-	@echo "  test        - Build and run the test suite"
-	@echo "  build_temp  - Build the test binary for generating temp test files (without auto-cleanup)"
-	@echo "  clean_temp  - Remove all temporary test files from the 'tmp' directory"
-	@echo "  help        - Show this help message"
-	
+	@echo "  clean           - Remove build artifacts (tools and generated files in build dir)"
+	@echo "  super_clean     - Remove build artifacts and dependencies (complete cleanup)"
+	@echo "  test            - Build and run the test suite"
+	@echo "  test_tiktoken   - Run only the tiktoken-specific tests"
+	@echo "  build_temp      - Build the test binary for generating temp test files (without auto-cleanup)"
+	@echo "  clean_temp      - Remove all temporary test files from the 'tmp' directory"
+	@echo "  help            - Show this help message"
