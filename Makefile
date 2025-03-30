@@ -78,6 +78,9 @@ all: $(BUILD_DIR)/dirdoc
 	@echo "✅ Build completed successfully"
 	@echo "📍 Binary location: $(BUILD_DIR)/dirdoc"
 	@echo "🚀 Run ./$(BUILD_DIR)/dirdoc --help for usage"
+	@echo ""
+	@echo "📌 To install globally, run:"
+	@echo "   sudo cp $(BUILD_DIR)/dirdoc /usr/local/bin/dirdoc"
 
 # Combined dependencies target (only Cosmo now)
 deps: ensure_dirs deps_cosmo download_tiktoken
