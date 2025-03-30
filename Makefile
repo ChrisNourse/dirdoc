@@ -116,8 +116,9 @@ $(TIKTOKEN_GEN_TOOL_OBJ): $(TIKTOKEN_GEN_TOOL_SRC) | $(BUILD_DIR) deps_cosmo
 $(TIKTOKEN_DATA_FILE): deps_tiktoken
 	@# This rule ensures the dependency is tracked. The file is created by git clone.
 	@# We add a check here to make sure the file exists after cloning.
-	@if [ ! -f "$@" ]; then \
-		echo "❌ Error: Tiktoken data file '$@' not found after running deps_tiktoken."; \
+	@# Use the variable explicitly instead of $@ to avoid potential expansion issues.
+	@if [ ! -f "$(TIKTOKEN_DATA_FILE)" ]; then \
+		echo "❌ Error: Tiktoken data file '$(TIKTOKEN_DATA_FILE)' not found after running deps_tiktoken."; \
 		echo "ℹ️  Check the clone step or the path in the Makefile."; \
 		exit 1; \
 	fi
