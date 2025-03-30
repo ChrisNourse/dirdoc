@@ -124,7 +124,10 @@ $(TIKTOKEN_DOWNLOADED_FILE): ensure_dirs
 		echo "📦 Downloading tiktoken data from $(TIKTOKEN_DATA_URL)..."; \
 		curl -L -s -o "$(TIKTOKEN_DOWNLOADED_FILE)" "$(TIKTOKEN_DATA_URL)" || touch "$(TIKTOKEN_DOWNLOADED_FILE).failed"; \
 		if [ -f "$(TIKTOKEN_DOWNLOADED_FILE).failed" ]; then \
-			echo "❌ Download failed!"; \
+			echo "❌ Download failed! The URL might have changed."; \
+			echo "   Please check if the Tiktoken data is still available at:"; \
+			echo "   $(TIKTOKEN_DATA_URL)"; \
+			echo "   You may need to update the URL in the Makefile if the resource has moved."; \
 			rm -f "$(TIKTOKEN_DOWNLOADED_FILE).failed"; \
 			exit 1; \
 		fi; \
@@ -164,7 +167,16 @@ $(TIKTOKEN_GEN_TOOL_OBJ): $(TIKTOKEN_GEN_TOOL_SRC) | deps_cosmo
 $(DEPS_DIR)/$(COSMO_ZIP): ensure_dirs
 	@if [ ! -f "$(DEPS_DIR)/$(COSMO_ZIP)" ]; then \
 		echo "📦 Fetching Cosmopolitan 4.0.2 dependencies..."; \
-		curl -L -o $(DEPS_DIR)/$(COSMO_ZIP) $(COSMO_ZIP_URL); \
+		curl -L -o $(DEPS_DIR)/$(COSMO_ZIP) $(COSMO_ZIP_URL) || touch "$(DEPS_DIR)/$(COSMO_ZIP).failed"; \
+		if [ -f "$(DEPS_DIR)/$(COSMO_ZIP).failed" ]; then \
+			echo "❌ Download failed! The URL for Cosmopolitan might have changed."; \
+			echo "   Please check if Cosmopolitan 4.0.2 is still available at:"; \
+			echo "   $(COSMO_ZIP_URL)"; \
+			echo "   You may need to update the version or URL in the Makefile if a new version is available."; \
+			echo "   Current version: 4.0.2"; \
+			rm -f "$(DEPS_DIR)/$(COSMO_ZIP).failed"; \
+			exit 1; \
+		fi; \
 		echo "✅ Downloaded $(COSMO_ZIP)"; \
 	else \
 		echo "✅ $(COSMO_ZIP) already exists, skipping download"; \
@@ -254,3 +266,4 @@ help:
 	@echo "  build_temp      - Build the test binary for generating temp test files (without auto-cleanup)"
 	@echo "  clean_temp      - Remove all temporary test files from the 'tmp' directory"
 	@echo "  help            - Show this help message"
+	
