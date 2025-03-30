@@ -32,13 +32,6 @@ git tag 1.0.0
 git push origin 1.0.0
 ```
 
-Alternatively, if you prefer to use the `v` prefix in your version numbers:
-
-```bash
-git tag v1.0.0
-git push origin v1.0.0
-```
-
 ### 3. Monitor the Release Process
 
 After pushing the tag:
