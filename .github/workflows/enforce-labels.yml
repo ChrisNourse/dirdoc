@@ -11,73 +11,27 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check for required version label
-        id: check-labels
-        run: |
-          # Use single quotes to prevent bash expansion issues
-          LABELS='${{ toJson(github.event.pull_request.labels.*.name) }}'
-          echo "Raw Labels: $LABELS"
-          
-          # Print for debugging
-          echo "Checking for major label..."
-          echo "Label contains 'major'? $(echo "$LABELS" | grep -q "major" && echo "YES" || echo "NO")"
-          echo "Checking for minor label..."
-          echo "Label contains 'minor'? $(echo "$LABELS" | grep -q "minor" && echo "YES" || echo "NO")"
-          echo "Checking for patch label..."
-          echo "Label contains 'patch'? $(echo "$LABELS" | grep -q "patch" && echo "YES" || echo "NO")"
-          
-          # Simpler detection method
-          # Use case-insensitive matching (-i) and fixed-string matching (-F) for reliability
-          if echo "$LABELS" | grep -i -F "major" > /dev/null; then
-            MAJOR_LABEL="major"
-            echo "Found major label"
-          else
-            MAJOR_LABEL=""
-            echo "No major label found"
-          fi
-          
-          if echo "$LABELS" | grep -i -F "minor" > /dev/null; then
-            MINOR_LABEL="minor"
-            echo "Found minor label"
-          else
-            MINOR_LABEL=""
-            echo "No minor label found"
-          fi
-          
-          if echo "$LABELS" | grep -i -F "patch" > /dev/null; then
-            PATCH_LABEL="patch"
-            echo "Found patch label"
-          else
-            PATCH_LABEL=""
-            echo "No patch label found"
-          fi
-          
-          VERSION_LABELS_COUNT=0
-          if [ ! -z "$MAJOR_LABEL" ]; then 
-            ((VERSION_LABELS_COUNT++))
-            echo "Counting major label. Count is now: $VERSION_LABELS_COUNT"
-          fi
-          
-          if [ ! -z "$MINOR_LABEL" ]; then 
-            ((VERSION_LABELS_COUNT++))
-            echo "Counting minor label. Count is now: $VERSION_LABELS_COUNT"
-          fi
-          
-          if [ ! -z "$PATCH_LABEL" ]; then 
-            ((VERSION_LABELS_COUNT++))
-            echo "Counting patch label. Count is now: $VERSION_LABELS_COUNT"
-          fi
-          
-          echo "Final version label count: $VERSION_LABELS_COUNT"
-          
-          if [ $VERSION_LABELS_COUNT -eq 0 ]; then
-            echo "❌ Error: No version label found"
-            echo "This PR requires exactly one version label: 'major', 'minor', or 'patch'"
-            exit 1
-          elif [ $VERSION_LABELS_COUNT -gt 1 ]; then
-            echo "❌ Error: Multiple version labels found"
-            echo "This PR should have exactly one version label: 'major', 'minor', or 'patch'"
-            exit 1
-          else
-            echo "✅ Version label check passed"
-            echo "PR has the required single version label"
-          fi
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const labels = context.payload.pull_request.labels.map(label => label.name);
+            console.log("All PR labels:", labels);
+            
+            const versionLabels = ['major', 'minor', 'patch'];
+            const foundLabels = versionLabels.filter(label => 
+              labels.some(prLabel => prLabel.toLowerCase() === label.toLowerCase())
+            );
+            
+            console.log("Found version labels:", foundLabels);
+            
+            if (foundLabels.length === 0) {
+              core.setFailed("❌ Error: No version label found. This PR requires exactly one version label: 'major', 'minor', or 'patch'");
+              return;
+            }
+            
+            if (foundLabels.length > 1) {
+              core.setFailed("❌ Error: Multiple version labels found. This PR should have exactly one version label: 'major', 'minor', or 'patch'");
+              return;
+            }
+            
+            console.log("✅ Version label check passed. PR has the required single version label:", foundLabels[0]);
