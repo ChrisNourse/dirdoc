@@ -14,7 +14,7 @@ CFLAGS = -g -O2 -Ideps/cosmocc/include $(TIKTOKEN_INCLUDE)
 LDFLAGS = $(TIKTOKEN_LDFLAGS)
 
 # Tiktoken integration (downloading data file directly)
-TIKTOKEN_ENCODER_NAME = cl100k_base # Or change to gpt2, r50k_base, p50k_base, p50k_edit, etc.
+TIKTOKEN_ENCODER_NAME = cl100k_base# Or change to gpt2, r50k_base, p50k_base, p50k_edit, etc.
 TIKTOKEN_BASE_URL = https://openaipublic.blob.core.windows.net/encodings
 TIKTOKEN_DATA_URL = $(TIKTOKEN_BASE_URL)/$(TIKTOKEN_ENCODER_NAME).tiktoken
 TIKTOKEN_DOWNLOADED_FILE = $(BUILD_DIR)/$(TIKTOKEN_ENCODER_NAME).tiktoken # Store downloaded file in build dir
