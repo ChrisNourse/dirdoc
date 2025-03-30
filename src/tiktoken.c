@@ -13,9 +13,12 @@ extern void tiktoken_cpp_free(TiktokenWrapper* wrapper);
 extern void tiktoken_cleanup(void);
 extern bool init_tiktoken(void);
 
+// External init function from C++
+extern bool tiktoken_cpp_init(void);
+
 // Global initialization function
 bool init_tiktoken(void) {
-    return init_tiktoken();
+    return tiktoken_cpp_init();
 }
 
 tiktoken_t tiktoken_get_encoding(const char* encoding_name) {

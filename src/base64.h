@@ -6,7 +6,7 @@
 #include <stdexcept>
 
 // Base64 decoding function
-inline std::string base64_decode(const std::string& base64_str) {
+std::string base64_decode(const std::string& base64_str) {
     static const std::string base64_chars = 
         "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
         "abcdefghijklmnopqrstuvwxyz"

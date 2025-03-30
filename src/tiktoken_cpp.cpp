@@ -250,7 +250,7 @@ struct TiktokenWrapper {
 static TiktokenWrapper* g_default_tiktoken = nullptr;
 
 // Initialize the default tiktoken instance
-bool init_tiktoken() {
+bool tiktoken_cpp_init() {
     if (g_default_tiktoken != nullptr && g_default_tiktoken->initialized) {
         return true;
     }
@@ -282,7 +282,7 @@ TiktokenWrapper* tiktoken_cpp_get_encoding(const char* encoding_name) {
         }
         
         // Initialize or return the default instance
-        if (init_tiktoken()) {
+        if (tiktoken_cpp_init()) {
             return g_default_tiktoken;
         }
         return nullptr;
