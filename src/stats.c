@@ -194,13 +194,13 @@ const char *get_language_from_extension(const char *filename) {
  * Converts the file size into a more understandable unit (B, KB, MB, etc.).
  *
  * @param path The file path.
- * @return char* A string representing the file size, or "unknown" if the file cannot be accessed.
+ * @return const char* A string representing the file size, or "unknown" if the file cannot be accessed.
  */
-char *get_file_size(const char *path) {
-    static char size[32];
+const char *get_file_size(const char *path) {
+    static char size[32]; // Note: Using static buffer is not thread-safe
     struct stat st;
     if (stat(path, &st) != 0) {
-        return "unknown";
+        return "unknown"; // Returning const char* is fine
     }
     double size_bytes = st.st_size;
     const char *units[] = {"B", "KB", "MB", "GB", "TB"};
