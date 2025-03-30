@@ -1,0 +1,20 @@
+Hello world
+Token count: 2
+Tokens: [9906, 1917]
+
+const char *message = "Hello, world!";
+Token count: 11
+Tokens: [1040, 1181, 353, 2037, 284, 330, 9906, 11, 1917, 0, 5233]
+
+This is a test of the tiktoken encoding system.
+Token count: 11
+Tokens: [2028, 374, 264, 1296, 315, 279, 87272, 5963, 11418, 1887, 13]
+
+GPT-4 uses the cl100k_base encoding.
+Token count: 12
+Tokens: [38, 2898, 12, 19, 5829, 279, 1206, 1041, 74, 7806, 11418, 13]
+
+Hello 你好 नमस्ते こんにちは
+Token count: 13
+Tokens: [9906, 220, 57668, 53901, 15272, 101, 88344, 79468, 31584, 97, 35470, 220, 90115]
+

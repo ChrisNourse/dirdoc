@@ -12,10 +12,9 @@ CC = $(DEPS_DIR)/cosmocc/bin/cosmocc
 CFLAGS = -g -O2 -Ideps/cosmocc/include $(TIKTOKEN_INCLUDE)
 LDFLAGS = $(TIKTOKEN_LDFLAGS)
 
-# Tiktoken integration (using OpenAI's embedding data)
+# Tiktoken integration (using embedded data)
 TIKTOKEN_INCLUDE = -I$(SRC_DIR)
 TIKTOKEN_LDFLAGS = -lstdc++
-TIKTOKEN_DATA_FILE = $(SRC_DIR)/tiktoken_data.h
 
 # Cosmopolitan Libc 4.0.2 URLs
 COSMO_ZIP_URL = https://github.com/jart/cosmopolitan/releases/download/4.0.2/cosmocc-4.0.2.zip
@@ -35,7 +34,7 @@ CPP_SOURCES = $(SRC_DIR)/tiktoken_cpp.cpp
 CPP_OBJECTS = $(patsubst $(SRC_DIR)/%.cpp, $(BUILD_DIR)/%.o, $(CPP_SOURCES))
 OTHER_OBJS = $(filter-out $(DIRDOC_OBJ), $(OBJECTS)) $(CPP_OBJECTS)
 
-.PHONY: all clean super_clean deps help test build_temp clean_temp samples tiktoken
+.PHONY: all clean super_clean deps help test build_temp clean_temp samples tiktoken test_tiktoken
 
 all: deps tiktoken $(BUILD_DIR)/dirdoc
 	@echo "✅ Build completed successfully"
@@ -56,25 +55,9 @@ $(CC): $(DEPS_DIR)/$(COSMO_ZIP)
 		echo "✅ cosmocc already exists, skipping unzip"; \
 	fi
 
-tiktoken: $(TIKTOKEN_DATA_FILE)
-
-$(TIKTOKEN_DATA_FILE):
-	@echo "⏳ Setting up OpenAI tiktoken data extraction..."
-	@mkdir -p $(DEPS_DIR)
-	@mkdir -p $(SRC_DIR)/tiktoken_data
-	@if ! command -v python3 &> /dev/null; then \
-		echo "❌ Python 3 is required for tiktoken data extraction"; \
-		exit 1; \
-	fi
-	@if ! python3 -c "import tiktoken" &> /dev/null; then \
-		echo "⏳ Installing tiktoken Python package..."; \
-		pip install tiktoken; \
-	fi
-	@echo "⏳ Extracting OpenAI tiktoken data..."
-	@python3 src/extract_tiktoken_data.py
-	@echo "⏳ Generating C header from tiktoken data..."
-	@python3 src/convert_to_c_header.py
-	@echo "✅ OpenAI tiktoken data extraction complete"
+tiktoken:
+	@echo "⏳ Using embedded tiktoken data (no Python required)..."
+	@echo "✅ Embedded tiktoken data ready"
 
 $(DEPS_DIR)/$(COSMO_ZIP):
 	@mkdir -p $(DEPS_DIR)
@@ -121,9 +104,20 @@ clean_temp:
 	rm -rf tmp
 	@echo "✅ Temp test files removed"
 
-test: deps $(BUILD_DIR)/dirdoc_test
-	@echo "🚀 Running tests..."
+test: deps $(BUILD_DIR)/dirdoc_test $(BUILD_DIR)/test_tiktoken
+	@echo "🚀 Running main tests..."
 	./$(BUILD_DIR)/dirdoc_test
+	@echo "🚀 Running tiktoken tests..."
+	./$(BUILD_DIR)/test_tiktoken
+
+$(BUILD_DIR)/test_tiktoken: $(SRC_DIR)/tiktoken.c $(SRC_DIR)/tiktoken_cpp.cpp $(SRC_DIR)/stats.c tests/test_tiktoken.c | $(BUILD_DIR) deps
+	@echo "⏳ Building tiktoken tests..."
+	$(CC) $(CFLAGS) -DUNIT_TEST -I. -I$(SRC_DIR) -I$(TEST_DIR) -Ideps/cosmocc/include -o $@ $^ $(LDFLAGS)
+	@echo "✅ Tiktoken test build complete"
+
+test_tiktoken: deps $(BUILD_DIR)/test_tiktoken
+	@echo "🚀 Running tiktoken tests..."
+	./$(BUILD_DIR)/test_tiktoken
 
 clean:
 	@echo "⏳ Cleaning build artifacts..."

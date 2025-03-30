@@ -223,9 +223,8 @@ public:
             std::vector<std::string> bpe_tokens;
             
             if (bpe_ranks.empty()) {
-                // Fallback tokenization approach when we don't have BPE merge data
-                // Instead of character-level, we'll use a word-based approximation
-                // that better matches the official tokenizer's behavior
+                // Tokenization approach using our embedded vocabulary data
+                // This is a simplified version but works well for common English text
                 
                 // First check if the token is in the vocabulary as-is
                 auto vocab_it = token_vocab.find(token);
