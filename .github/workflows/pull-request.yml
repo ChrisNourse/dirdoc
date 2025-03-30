@@ -34,33 +34,3 @@ jobs:
           echo "Checking code style..."
           # Add code style checks here if needed
           echo "Code style check completed!"
-  
-  auto-merge:
-    name: Auto-merge PR for Owner
-    needs: validate
-    runs-on: ubuntu-latest
-    if: github.event.pull_request.user.login == github.repository_owner
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        
-      - name: Install GitHub CLI
-        run: |
-          type -p curl >/dev/null || sudo apt install curl -y
-          curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \
-          && sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg \
-          && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
-          && sudo apt update \
-          && sudo apt install gh -y
-          
-      - name: Auto-merge PR
-        run: |
-          echo "Auto-merging PR from repository owner..."
-          echo "$GH_PAT" | gh auth login --with-token
-          
-          # For repository owners, we'll directly merge without approval since GitHub doesn't allow self-approval
-          gh pr merge ${{ github.event.pull_request.number }} --merge -R ${{ github.repository }} --admin
-          
-          echo "PR merged successfully!"
-        env:
-          GH_PAT: ${{ secrets.GH_PAT }}
