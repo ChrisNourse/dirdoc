@@ -36,7 +36,6 @@ static void print_help() {
            "  dirdoc --ignore \"temp/\" /path/to/dir          # Ignore the entire temp directory\n");
 }
 
-#ifndef UNIT_TEST
 /**
  * @brief Main entry point for the dirdoc application.
  *
