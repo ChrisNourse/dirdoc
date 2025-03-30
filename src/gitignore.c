@@ -139,7 +139,7 @@ int parse_gitignore_pattern_string(const char *pattern_str, GitignoreList *list)
     // Ensure capacity in the GitignoreList
     if (list->count >= list->capacity) {
         size_t new_capacity = list->capacity ? list->capacity * 2 : 16;
-        GitignoreRule *new_rules = realloc(list->rules, new_capacity * sizeof(GitignoreRule));
+        GitignoreRule *new_rules = (GitignoreRule*)realloc(list->rules, new_capacity * sizeof(GitignoreRule));
         if (!new_rules) {
             regfree(&regex);
             free(pattern);
