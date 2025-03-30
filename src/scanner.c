@@ -19,7 +19,7 @@
 void init_file_list(FileList *list) {
     list->capacity = 16;
     list->count = 0;
-    list->entries = malloc(list->capacity * sizeof(FileEntry));
+    list->entries = (FileEntry*)malloc(list->capacity * sizeof(FileEntry));
 }
 
 /**
