@@ -6,8 +6,8 @@
 #include <stdexcept>
 
 // Base64 decoding function
-std::string base64_decode(const std::string& base64_str) {
-    static const std::string base64_chars = 
+inline std::string base64_decode(const std::string& base64_str) {
+    const char* base64_chars = 
         "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
         "abcdefghijklmnopqrstuvwxyz"
         "0123456789+/";
