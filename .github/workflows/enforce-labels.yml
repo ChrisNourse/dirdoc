@@ -47,9 +47,22 @@ jobs:
           fi
           
           VERSION_LABELS_COUNT=0
-          if [ ! -z "$MAJOR_LABEL" ]; then ((VERSION_LABELS_COUNT++)); fi
-          if [ ! -z "$MINOR_LABEL" ]; then ((VERSION_LABELS_COUNT++)); fi
-          if [ ! -z "$PATCH_LABEL" ]; then ((VERSION_LABELS_COUNT++)); fi
+          if [ ! -z "$MAJOR_LABEL" ]; then 
+            ((VERSION_LABELS_COUNT++))
+            echo "Counting major label. Count is now: $VERSION_LABELS_COUNT"
+          fi
+          
+          if [ ! -z "$MINOR_LABEL" ]; then 
+            ((VERSION_LABELS_COUNT++))
+            echo "Counting minor label. Count is now: $VERSION_LABELS_COUNT"
+          fi
+          
+          if [ ! -z "$PATCH_LABEL" ]; then 
+            ((VERSION_LABELS_COUNT++))
+            echo "Counting patch label. Count is now: $VERSION_LABELS_COUNT"
+          fi
+          
+          echo "Final version label count: $VERSION_LABELS_COUNT"
           
           if [ $VERSION_LABELS_COUNT -eq 0 ]; then
             echo "❌ Error: No version label found"
@@ -61,4 +74,5 @@ jobs:
             exit 1
           else
             echo "✅ Version label check passed"
+            echo "PR has the required single version label"
           fi
