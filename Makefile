@@ -194,21 +194,21 @@ $(BUILD_DIR)/dirdoc_test.o: $(SRC_DIR)/dirdoc.c deps
 	$(CC) $(CFLAGS) $(TEST_CFLAGS) -c $< -o $@
 
 # Link test objects and application objects for the main test executable - using test-specific dirdoc_test.o
-$(BUILD_DIR)/dirdoc_test: $(filter-out $(BUILD_DIR)/dirdoc.o, $(OBJECTS)) $(BUILD_DIR)/dirdoc_test.o $(MAIN_CPP_OBJECTS) $(TEST_OBJECTS) $(TIKTOKEN_GENERATED_HEADER) deps
+$(BUILD_DIR)/dirdoc_test: $(filter-out $(BUILD_DIR)/dirdoc.o, $(OBJECTS)) $(BUILD_DIR)/dirdoc_test.o $(MAIN_CPP_OBJECTS) $(TEST_OBJECTS) $(TIKTOKEN_GENERATED_HEADER) | deps
 	@echo "⏳ Linking test executable..."
-	$(CXX) $(LDFLAGS) -o $@ $(filter-out $(TIKTOKEN_GENERATED_HEADER), $^)
+	$(CXX) $(LDFLAGS) -o $@ $(filter-out $(TIKTOKEN_GENERATED_HEADER), $(filter-out deps, $^))
 	@echo "✅ Test link complete"
 
 # Link test objects and application objects for the temp test executable
-$(BUILD_DIR)/temp_test: $(filter-out $(DIRDOC_OBJ), $(OBJECTS)) $(MAIN_CPP_OBJECTS) $(TEST_OBJECTS) $(TIKTOKEN_GENERATED_HEADER) deps
+$(BUILD_DIR)/temp_test: $(filter-out $(DIRDOC_OBJ), $(OBJECTS)) $(MAIN_CPP_OBJECTS) $(TEST_OBJECTS) $(TIKTOKEN_GENERATED_HEADER) | deps
 	@echo "⏳ Linking temp test executable..."
-	$(CXX) $(LDFLAGS) -DINSPECT_TEMP -o $@ $(filter-out $(TIKTOKEN_GENERATED_HEADER), $^)
+	$(CXX) $(LDFLAGS) -DINSPECT_TEMP -o $@ $(filter-out $(TIKTOKEN_GENERATED_HEADER), $(filter-out deps, $^))
 	@echo "✅ Temp test link complete"
 
 # Link tiktoken test objects with required application objects
-$(BUILD_DIR)/test_tiktoken: $(TEST_TIKTOKEN_OBJ) $(TIKTOKEN_TEST_DEPS) $(TIKTOKEN_GENERATED_HEADER) deps
+$(BUILD_DIR)/test_tiktoken: $(TEST_TIKTOKEN_OBJ) $(TIKTOKEN_TEST_DEPS) $(TIKTOKEN_GENERATED_HEADER) | deps
 	@echo "⏳ Linking tiktoken test executable..."
-	$(CXX) $(LDFLAGS) -o $@ $(filter-out $(TIKTOKEN_GENERATED_HEADER), $^)
+	$(CXX) $(LDFLAGS) -o $@ $(filter-out $(TIKTOKEN_GENERATED_HEADER), $(filter-out deps, $^))
 	@echo "✅ Tiktoken test link complete"
 
 build_temp: deps $(BUILD_DIR)/temp_test
