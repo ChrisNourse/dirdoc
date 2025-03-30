@@ -234,7 +234,14 @@ public:
                     continue;
                 }
                 
-                // For ASCII, use a more precise token estimation algorithm
+                // Check if the token is in the vocabulary directly
+                auto vocab_it = token_vocab.find(token);
+                if (vocab_it != token_vocab.end()) {
+                    encoded_tokens.push_back(vocab_it->second);
+                    continue;
+                }
+                
+                // Otherwise use a fallback approach
                 bool is_ascii = true;
                 for (unsigned char c : token) {
                     if (c > 127) {
@@ -245,32 +252,28 @@ public:
                 
                 if (is_ascii) {
                     // For ASCII tokens
-                    if (token.length() <= 4 || isdigit(token[0])) {
-                        // Short ascii tokens and numbers are usually one token
+                    if (token.length() <= 4) {
+                        // Very short ASCII tokens
                         bpe_tokens.push_back(token);
-                    } else if (ispunct(token[0])) {
-                        // Punctuation is usually one token per character
+                    } else if (ispunct(token[0]) || isdigit(token[0])) {
+                        // Punctuation and numbers often need special handling
                         for (char c : token) {
                             bpe_tokens.push_back(std::string(1, c));
                         }
                     } else {
-                        // For typical English words, most common words are 1-2 tokens
-                        // Very roughly: ~1 token per 3-4 characters
-                        if (token.length() <= 6) {
-                            // Short words (up to 6 chars) are usually 1 token
-                            bpe_tokens.push_back(token);
-                        } else if (token.length() <= 12) {
-                            // Medium words (7-12 chars) are usually 2 tokens
-                            // Split roughly in the middle
-                            size_t half = token.length() / 2;
-                            bpe_tokens.push_back(token.substr(0, half));
-                            bpe_tokens.push_back(token.substr(half));
+                        // Split into smaller chunks based on length
+                        // GPT models often split words into subwords of ~2-4 bytes
+                        size_t chunk_size;
+                        if (token.length() <= 8) {
+                            chunk_size = 4;  // Short words use ~4 char chunks
+                        } else if (token.length() <= 16) {
+                            chunk_size = 3;  // Medium words use ~3 char chunks
                         } else {
-                            // Longer words typically break into chunks
-                            // Use approximately 3 chars per token
-                            for (size_t i = 0; i < token.length(); i += 3) {
-                                bpe_tokens.push_back(token.substr(i, std::min(size_t(3), token.length() - i)));
-                            }
+                            chunk_size = 2;  // Long words use ~2 char chunks
+                        }
+                        
+                        for (size_t i = 0; i < token.length(); i += chunk_size) {
+                            bpe_tokens.push_back(token.substr(i, std::min(chunk_size, token.length() - i)));
                         }
                     }
                 } else {

@@ -75,8 +75,8 @@ void calculate_token_stats(const char *str, DocumentInfo *info) {
         }
         
         // GPT tokenizers typically produce more tokens than words
-        // A more conservative approximation is words * 1.1
-        info->total_tokens += (size_t)(word_count * 1.1);
+        // This is a conservative approximation that should match real tokenizers
+        info->total_tokens += (size_t)(word_count * 1.3);
         return;
     }
     
@@ -108,7 +108,7 @@ void calculate_token_stats(const char *str, DocumentInfo *info) {
             }
         }
         
-        info->total_tokens += (size_t)(word_count * 1.1);
+        info->total_tokens += (size_t)(word_count * 1.3);
     }
     
     // Free memory
