@@ -11,7 +11,6 @@ extern int tiktoken_cpp_encode(TiktokenWrapper* wrapper, const char* text, size_
 extern int tiktoken_cpp_count(TiktokenWrapper* wrapper, const char* text, size_t text_len);
 extern void tiktoken_cpp_free(TiktokenWrapper* wrapper);
 extern void tiktoken_cleanup(void);
-extern bool init_tiktoken(void);
 
 // External init function from C++
 extern bool tiktoken_cpp_init(void);

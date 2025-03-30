@@ -270,7 +270,7 @@ struct TiktokenWrapper {
 static TiktokenWrapper* g_default_tiktoken = nullptr;
 
 // Initialize the default tiktoken instance
-bool tiktoken_cpp_init() {
+extern "C" bool tiktoken_cpp_init() {
     if (g_default_tiktoken != nullptr && g_default_tiktoken->initialized) {
         return true;
     }
@@ -293,7 +293,7 @@ bool tiktoken_cpp_init() {
 }
 
 // Get an encoding by name (only cl100k_base is supported)
-TiktokenWrapper* tiktoken_cpp_get_encoding(const char* encoding_name) {
+extern "C" TiktokenWrapper* tiktoken_cpp_get_encoding(const char* encoding_name) {
     try {
         // We only support cl100k_base for now
         if (strcmp(encoding_name, "cl100k_base") != 0) {
@@ -313,8 +313,8 @@ TiktokenWrapper* tiktoken_cpp_get_encoding(const char* encoding_name) {
 }
 
 // Encode a string to tokens
-int tiktoken_cpp_encode(TiktokenWrapper* wrapper, const char* text, size_t text_len, 
-                        tiktoken_token_t** tokens_out) {
+extern "C" int tiktoken_cpp_encode(TiktokenWrapper* wrapper, const char* text, size_t text_len, 
+                                  tiktoken_token_t** tokens_out) {
     try {
         if (wrapper == nullptr || wrapper->encoder == nullptr || !wrapper->initialized) {
             return -1;
@@ -346,7 +346,7 @@ int tiktoken_cpp_encode(TiktokenWrapper* wrapper, const char* text, size_t text_
 }
 
 // Count tokens without returning them
-int tiktoken_cpp_count(TiktokenWrapper* wrapper, const char* text, size_t text_len) {
+extern "C" int tiktoken_cpp_count(TiktokenWrapper* wrapper, const char* text, size_t text_len) {
     try {
         if (wrapper == nullptr || wrapper->encoder == nullptr || !wrapper->initialized) {
             return -1;
@@ -368,7 +368,7 @@ int tiktoken_cpp_count(TiktokenWrapper* wrapper, const char* text, size_t text_l
 }
 
 // Free a tiktoken encoding
-void tiktoken_cpp_free(TiktokenWrapper* wrapper) {
+extern "C" void tiktoken_cpp_free(TiktokenWrapper* wrapper) {
     if (wrapper != nullptr && wrapper != g_default_tiktoken) {
         if (wrapper->encoder != nullptr) {
             delete wrapper->encoder;
@@ -379,7 +379,7 @@ void tiktoken_cpp_free(TiktokenWrapper* wrapper) {
 }
 
 // Clean up global resources on program exit
-void tiktoken_cleanup() {
+extern "C" void tiktoken_cleanup() {
     if (g_default_tiktoken != nullptr) {
         if (g_default_tiktoken->encoder != nullptr) {
             delete g_default_tiktoken->encoder;
