@@ -71,7 +71,7 @@ TEST_TIKTOKEN_OBJ = $(patsubst %.c, $(BUILD_DIR)/test_%.o, $(TEST_TIKTOKEN_SRCS)
 TIKTOKEN_TEST_DEPS = $(BUILD_DIR)/tiktoken.o $(BUILD_DIR)/stats.o $(BUILD_DIR)/tiktoken_cpp.o
 
 
-.PHONY: all clean super_clean deps deps_cosmo help test build_temp clean_temp test_tiktoken tools download_tiktoken
+.PHONY: all clean super_clean deps test help
 
 # Main build target depends on the final binary
 all: $(BUILD_DIR)/dirdoc
@@ -81,9 +81,6 @@ all: $(BUILD_DIR)/dirdoc
 
 # Combined dependencies target (only Cosmo now)
 deps: ensure_dirs deps_cosmo download_tiktoken
-
-# Target for building tools
-tools: ensure_dirs $(TIKTOKEN_GEN_TOOL_EXE)
 
 # Ensure all required directories exist
 ensure_dirs:
@@ -106,8 +103,7 @@ $(CC): $(DEPS_DIR)/$(COSMO_ZIP)
 		echo "✅ cosmocc already exists, skipping unzip"; \
 	fi
 
-# Phony target for tiktoken data to help debugging
-.PHONY: download_tiktoken
+# Target for tiktoken data to help debugging
 download_tiktoken: ensure_dirs $(TIKTOKEN_DOWNLOADED_FILE)
 
 # Target to download the tiktoken data file - used touch to create empty file if download fails
@@ -211,35 +207,10 @@ $(BUILD_DIR)/dirdoc_test: $(filter-out $(BUILD_DIR)/dirdoc.o, $(OBJECTS)) $(BUIL
 	$(CXX) $(LDFLAGS) -o $@ $(filter-out $(TIKTOKEN_GENERATED_HEADER), $(filter-out deps, $^))
 	@echo "✅ Test link complete"
 
-# Link test objects and application objects for the temp test executable
-$(BUILD_DIR)/temp_test: $(filter-out $(DIRDOC_OBJ), $(OBJECTS)) $(MAIN_CPP_OBJECTS) $(TEST_OBJECTS) $(TIKTOKEN_GENERATED_HEADER) | deps
-	@echo "⏳ Linking temp test executable..."
-	$(CXX) $(LDFLAGS) -DINSPECT_TEMP -o $@ $(filter-out $(TIKTOKEN_GENERATED_HEADER), $(filter-out deps, $^))
-	@echo "✅ Temp test link complete"
-
-# Link tiktoken test objects with required application objects
-$(BUILD_DIR)/test_tiktoken: $(TEST_TIKTOKEN_OBJ) $(TIKTOKEN_TEST_DEPS) $(TIKTOKEN_GENERATED_HEADER) | deps
-	@echo "⏳ Linking tiktoken test executable..."
-	$(CXX) $(LDFLAGS) -o $@ $(filter-out $(TIKTOKEN_GENERATED_HEADER), $(filter-out deps, $^))
-	@echo "✅ Tiktoken test link complete"
-
-build_temp: deps $(BUILD_DIR)/temp_test
-	@echo "✅ Temp test binary built. Run './$(BUILD_DIR)/temp_test' to generate temporary test files for inspection."
-
-clean_temp:
-	@echo "⏳ Removing temporary test files..."
-	rm -rf tmp
-	@echo "✅ Temp test files removed"
-
-# Update test target dependencies - Just use the main test binary
+# Build and run the main tests
 test: $(BUILD_DIR)/dirdoc_test
 	@echo "🚀 Running main tests..."
 	./$(BUILD_DIR)/dirdoc_test
-
-# Keep test_tiktoken target for backward compatibility, but make it use the main test binary
-test_tiktoken: $(BUILD_DIR)/test_tiktoken
-	@echo "🚀 Running tiktoken tests only..."
-	./$(BUILD_DIR)/test_tiktoken
 
 clean:
 	@echo "⏳ Cleaning build artifacts..."
@@ -255,15 +226,7 @@ help:
 	@echo "Available targets:"
 	@echo "  all             - Build the dirdoc application (downloads deps, generates header)"
 	@echo "  deps            - Download and set up dependencies (Cosmopolitan)"
-	@echo "  deps_cosmo      - Download and set up Cosmopolitan dependency"
-	@echo "  tools           - Build helper tools (e.g., tiktoken data generator)"
-	@echo "  download_tiktoken - Download the tiktoken data file (debug information and verbose output)"
-	@echo "  $(TIKTOKEN_GENERATED_HEADER) - Generate the tiktoken C header (requires compiled C++ tool and downloaded data)"
+	@echo "  test            - Build and run the test suite"
 	@echo "  clean           - Remove build artifacts (tools and generated files in build dir)"
 	@echo "  super_clean     - Remove build artifacts and dependencies (complete cleanup)"
-	@echo "  test            - Build and run the test suite"
-	@echo "  test_tiktoken   - Run only the tiktoken-specific tests"
-	@echo "  build_temp      - Build the test binary for generating temp test files (without auto-cleanup)"
-	@echo "  clean_temp      - Remove all temporary test files from the 'tmp' directory"
 	@echo "  help            - Show this help message"
-	
