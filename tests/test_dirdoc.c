@@ -679,7 +679,13 @@ void test_ignore_directory() {
 }
 
 /* Main test runner */
-int main(void) {
+int main(int argc, char *argv[]) {
+    // Check if we should only run tiktoken tests
+    if (argc > 1 && (strcmp(argv[1], "--test-tiktoken-only") == 0)) {
+        run_tiktoken_tests();
+        return 0;
+    }
+    
     printf("Running tests for dirdoc...\n");
     test_get_default_output();
     test_get_language_from_extension();

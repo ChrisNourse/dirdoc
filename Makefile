@@ -198,17 +198,15 @@ clean_temp:
 	rm -rf tmp
 	@echo "✅ Temp test files removed"
 
-# Update test target dependencies
-test: $(BUILD_DIR)/dirdoc_test $(BUILD_DIR)/test_tiktoken
+# Update test target dependencies - Just use the main test binary
+test: $(BUILD_DIR)/dirdoc_test
 	@echo "🚀 Running main tests..."
 	./$(BUILD_DIR)/dirdoc_test
-	@echo "🚀 Running tiktoken tests..."
-	./$(BUILD_DIR)/test_tiktoken
 
-# Update test_tiktoken target dependencies (depends on the built test binary)
-test_tiktoken: $(BUILD_DIR)/test_tiktoken
-	@echo "🚀 Running tiktoken tests..."
-	./$(BUILD_DIR)/test_tiktoken
+# Keep test_tiktoken target for backward compatibility, but make it use the main test binary
+test_tiktoken: $(BUILD_DIR)/dirdoc_test
+	@echo "🚀 Running tiktoken tests only..."
+	./$(BUILD_DIR)/dirdoc_test --test-tiktoken-only
 
 clean:
 	@echo "⏳ Cleaning build artifacts..."
