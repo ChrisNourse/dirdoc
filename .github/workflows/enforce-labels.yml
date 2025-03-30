@@ -14,23 +14,34 @@ jobs:
         id: check-labels
         run: |
           LABELS="${{ toJson(github.event.pull_request.labels.*.name) }}"
-          echo "Labels found: $LABELS"
+          echo "Raw Labels: $LABELS"
           
-          # Use jq for more reliable JSON parsing
-          if [[ "$LABELS" == *"\"major\""* ]]; then
+          # Print for debugging
+          echo "Checking for major label..."
+          echo "Label contains 'major'? $(echo "$LABELS" | grep -q "major" && echo "YES" || echo "NO")"
+          echo "Checking for minor label..."
+          echo "Label contains 'minor'? $(echo "$LABELS" | grep -q "minor" && echo "YES" || echo "NO")"
+          echo "Checking for patch label..."
+          echo "Label contains 'patch'? $(echo "$LABELS" | grep -q "patch" && echo "YES" || echo "NO")"
+          
+          # Simpler detection method
+          if echo "$LABELS" | grep -q "major"; then
             MAJOR_LABEL="major"
+            echo "Found major label"
           else
             MAJOR_LABEL=""
           fi
           
-          if [[ "$LABELS" == *"\"minor\""* ]]; then
+          if echo "$LABELS" | grep -q "minor"; then
             MINOR_LABEL="minor"
+            echo "Found minor label"
           else
             MINOR_LABEL=""
           fi
           
-          if [[ "$LABELS" == *"\"patch\""* ]]; then
+          if echo "$LABELS" | grep -q "patch"; then
             PATCH_LABEL="patch"
+            echo "Found patch label"
           else
             PATCH_LABEL=""
           fi
