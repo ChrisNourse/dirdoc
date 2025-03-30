@@ -60,7 +60,8 @@ int test_delete_existing_file() {
     return 0;
 }
 
-int main() {
+// Function to run all file deletion tests
+int run_file_deletion_tests() {
     int errors = 0;
     
     errors += test_delete_existing_file();
@@ -73,3 +74,9 @@ int main() {
         return 1;
     }
 }
+
+#ifdef FILE_DELETION_STANDALONE
+int main() {
+    return run_file_deletion_tests();
+}
+#endif
