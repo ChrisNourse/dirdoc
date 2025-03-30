@@ -18,10 +18,10 @@ jobs:
           LABELS="${{ toJson(github.event.pull_request.labels.*.name) }}"
           if [[ $LABELS == *"major"* ]] || [[ $LABELS == *"minor"* ]] || [[ $LABELS == *"patch"* ]]; then
             echo "Version label found."
-            echo "::set-output name=has_label::true"
+            echo "has_label=true" >> $GITHUB_OUTPUT
           else
             echo "No version label found on this PR. Skipping version bump."
-            echo "::set-output name=has_label::false"
+            echo "has_label=false" >> $GITHUB_OUTPUT
           fi
       
       - name: Checkout code
@@ -29,7 +29,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0  # Need full history to get tags
-          token: ${{ secrets.RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
           persist-credentials: true
           
       - name: Determine version bump
@@ -65,8 +65,8 @@ jobs:
             NEW_VERSION="${MAJOR}.${MINOR}.$((PATCH + 1))"
           fi
           
-          echo "::set-output name=bump_type::${BUMP_TYPE}"
-          echo "::set-output name=next_version::${NEW_VERSION}"
+          echo "bump_type=${BUMP_TYPE}" >> $GITHUB_OUTPUT
+          echo "next_version=${NEW_VERSION}" >> $GITHUB_OUTPUT
           echo "Next version should be: ${NEW_VERSION} (${BUMP_TYPE} bump)"
           
       - name: Create and Push Tag
@@ -80,7 +80,7 @@ jobs:
           git tag $NEW_VERSION
           
           # Use the token explicitly in the push URL
-          git push "https://${{ github.actor }}:${{ secrets.GH_PAT }}@github.com/${{ github.repository }}.git" $NEW_VERSION
+          git push "https://x-access-token:${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" $NEW_VERSION
           
           echo "Created and pushed tag: $NEW_VERSION"
           
