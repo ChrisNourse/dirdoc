@@ -67,7 +67,7 @@ jobs:
           
           # Configure GitHub CLI with token
           echo "Authenticating with GitHub CLI..."
-          echo "$GH_PAT" | gh auth login --with-token
+          echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
           
           # Verify authentication
           echo "Verifying GitHub authentication..."
@@ -83,4 +83,4 @@ jobs:
           
           echo "Release created successfully!"
         env:
-          GH_PAT: ${{ secrets.GH_PAT }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
