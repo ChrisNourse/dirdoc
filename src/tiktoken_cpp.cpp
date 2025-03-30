@@ -255,15 +255,21 @@ public:
                         }
                     } else {
                         // For typical English words, most common words are 1-2 tokens
-                        // Very roughly: ~1 token per 4-5 characters
-                        if (token.length() <= 8) {
-                            // Most common words (up to 8 chars) are ~1-2 tokens
+                        // Very roughly: ~1 token per 3-4 characters
+                        if (token.length() <= 6) {
+                            // Short words (up to 6 chars) are usually 1 token
                             bpe_tokens.push_back(token);
+                        } else if (token.length() <= 12) {
+                            // Medium words (7-12 chars) are usually 2 tokens
+                            // Split roughly in the middle
+                            size_t half = token.length() / 2;
+                            bpe_tokens.push_back(token.substr(0, half));
+                            bpe_tokens.push_back(token.substr(half));
                         } else {
                             // Longer words typically break into chunks
-                            // Use approximately 4 chars per token
-                            for (size_t i = 0; i < token.length(); i += 4) {
-                                bpe_tokens.push_back(token.substr(i, std::min(size_t(4), token.length() - i)));
+                            // Use approximately 3 chars per token
+                            for (size_t i = 0; i < token.length(); i += 3) {
+                                bpe_tokens.push_back(token.substr(i, std::min(size_t(3), token.length() - i)));
                             }
                         }
                     }
