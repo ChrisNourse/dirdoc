@@ -28,9 +28,3 @@ jobs:
           make test
           echo "Tests completed successfully!"
         shell: bash
-
-      - name: Check code style
-        run: |
-          echo "Checking code style..."
-          # Add code style checks here if needed
-          echo "Code style check completed!"
