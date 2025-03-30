@@ -536,8 +536,14 @@ int document_directory(const char *input_dir, const char *output_file, int flags
     if (access(out_path, F_OK) == 0) {
         fprintf(stderr, "⚠️  Existing documentation file found: '%s'. Removing...\n", out_path);
         if (remove(out_path) != 0) {
-            fprintf(stderr, "Error: Could not remove existing output file '%s'\n", out_path);
-            // Continue anyway, as we'll attempt to overwrite it
+            fprintf(stderr, "Error: Could not remove existing output file '%s'. Check permissions.\n", out_path);
+            fprintf(stderr, "To avoid conflicts, documentation will not be generated to this file.\n");
+            free_file_list(&files);
+            free_gitignore(&gitignore);
+            if (!output_file) {
+                free(out_path);
+            }
+            return 1;
         }
     }
     
