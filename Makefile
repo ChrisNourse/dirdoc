@@ -207,8 +207,8 @@ $(BUILD_DIR)/dirdoc_test: $(filter-out $(BUILD_DIR)/dirdoc.o, $(OBJECTS)) $(BUIL
 	$(CXX) $(LDFLAGS) -o $@ $(filter-out $(TIKTOKEN_GENERATED_HEADER), $(filter-out deps, $^))
 	@echo "✅ Test link complete"
 
-# Build and run the main tests
-test: $(BUILD_DIR)/dirdoc_test
+# Build and run the main tests - don't force 'all' to run, but ensure dependencies are available
+test: deps $(BUILD_DIR)/dirdoc_test
 	@echo "🚀 Running main tests..."
 	./$(BUILD_DIR)/dirdoc_test
 
