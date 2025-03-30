@@ -17,7 +17,7 @@ extern bool init_tiktoken(void);
 extern bool tiktoken_cpp_init(void);
 
 // Global initialization function
-bool init_tiktoken(void) {
+bool tiktoken_init(void) {
     return tiktoken_cpp_init();
 }
 

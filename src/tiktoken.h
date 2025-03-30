@@ -15,7 +15,7 @@ typedef int tiktoken_token_t;
  * Initialize the tiktoken library
  * Returns true if initialization succeeded, false otherwise
  */
-bool init_tiktoken(void);
+bool tiktoken_init(void);
 
 /**
  * Get a tiktoken encoding by name

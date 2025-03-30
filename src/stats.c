@@ -17,6 +17,10 @@ static tiktoken_t encoder = NULL;
  */
 bool init_tiktoken() {
     if (encoder == NULL) {
+        // Initialize the tiktoken library first
+        if (!tiktoken_init()) {
+            return false;
+        }
         // Initialize with cl100k_base encoding (GPT-4/3.5-turbo encoding)
         encoder = tiktoken_get_encoding("cl100k_base");
         return (encoder != NULL);
