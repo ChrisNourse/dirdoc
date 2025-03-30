@@ -156,7 +156,7 @@ $(BUILD_DIR)/test_%.o: $(TEST_DIR)/%.c | $(BUILD_DIR)
 
 # Link all object files together for the main executable, ensuring dirdoc.o is last.
 # Make sure the generated header exists before linking.
-$(BUILD_DIR)/dirdoc: $(DIRDOC_LINK_OBJS) $(DIRDOC_OBJ) $(TIKTOKEN_GENERATED_HEADER) | deps
+$(BUILD_DIR)/dirdoc: $(DIRDOC_LINK_OBJS) $(DIRDOC_OBJ) | deps
 	@echo "⏳ Linking dirdoc..."
 	$(CXX) $(LDFLAGS) -o $@ $(DIRDOC_LINK_OBJS) $(DIRDOC_OBJ)
 	@echo "✅ Build complete"
