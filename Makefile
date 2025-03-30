@@ -63,7 +63,7 @@ TEST_SOURCES = $(wildcard $(TEST_DIR)/*.c)
 TEST_OBJECTS = $(patsubst $(TEST_DIR)/%.c, $(BUILD_DIR)/test_%.o, $(TEST_SOURCES))
 
 # File deletion test specific objects
-TEST_FILE_DELETION_OBJ = $(BUILD_DIR)/test_file_deletion.o
+TEST_FILE_DELETION_OBJ = $(BUILD_DIR)/test_test_file_deletion.o
 
 # Test-specific flags
 TEST_CFLAGS = -DUNIT_TEST -I. -I$(SRC_DIR) -I$(TEST_DIR) -Ideps/cosmocc/include
