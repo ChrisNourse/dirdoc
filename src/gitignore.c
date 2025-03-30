@@ -11,7 +11,7 @@
 // Helper: Escapes regex special characters in a string.
 static char *escape_regex(const char *str) {
     size_t len = strlen(str);
-    char *escaped = malloc(2 * len + 1); // worst-case: every character escaped
+    char *escaped = (char*)malloc(2 * len + 1); // worst-case: every character escaped
     if (!escaped) return NULL;
     char *dest = escaped;
     for (size_t i = 0; i < len; i++) {
