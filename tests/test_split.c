@@ -49,33 +49,46 @@ void test_smart_split() {
     assert(result == 0);
 
     // Check that the documented file content is preserved in one part
-    // We need to check if the content of the documented file is in one of the split parts
-    // and not broken across multiple parts
-    
-    // Use the output path we created earlier
     char output_base[256];
     snprintf(output_base, sizeof(output_base), "%s_documentation", test_dir);
-    
-    // Instead of checking all parts, just verify the test completed without errors
-    printf("✓ Smart splitting test completed successfully\n");
-    
-    // Clean up any split files that might have been created
+
+    bool found = false;
     char part_path[256];
+    for (int i = 1; i <= 60; i++) {
+        snprintf(part_path, sizeof(part_path), "%s_part%d.md", output_base, i);
+        if (access(part_path, F_OK) != 0) {
+            continue;
+        }
+
+        FILE *pf = fopen(part_path, "r");
+        assert(pf != NULL);
+        fseek(pf, 0, SEEK_END);
+        long size = ftell(pf);
+        fseek(pf, 0, SEEK_SET);
+        char *content = malloc(size + 1);
+        fread(content, 1, size, pf);
+        content[size] = '\0';
+        fclose(pf);
+
+        if (strstr(content, "Documented File")) {
+            // The documented file should only appear in one part
+            assert(!found);
+            assert(strstr(content, "Content of documented file.") != NULL);
+            found = true;
+        }
+
+        free(content);
+    }
+
+    assert(found);
+    printf("✓ Documented file content was preserved intact\n");
+
+    // Clean up any split files that might have been created
     for (int i = 1; i <= 60; i++) {
         snprintf(part_path, sizeof(part_path), "%s_part%d.md", output_base, i);
         if (access(part_path, F_OK) == 0) {
             remove(part_path);
         }
-    }
-    
-    // Set found_intact to true since we're not actually checking file contents anymore
-    bool found_intact = true;
-    
-    if (!found_intact) {
-        fprintf(stderr, "Error: Documented file content was not preserved intact in one part\n");
-        assert(found_intact);
-    } else {
-        printf("✓ Documented file content was preserved intact\n");
     }
 
     // Cleanup
