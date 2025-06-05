@@ -416,6 +416,7 @@ size_t find_split_points(const char *content, size_t limit, size_t *split_points
     size_t content_length = strlen(content);
     size_t current = 0;
     size_t found_splits = 0;
+    size_t marker_len = strlen("\n### 📄");
 
     while (current + limit < content_length && found_splits < max_splits) {
         // Start looking for a split point well before the limit to ensure we don't split a file
@@ -424,7 +425,8 @@ size_t find_split_points(const char *content, size_t limit, size_t *split_points
         // Find the next occurrence of "### 📄" which indicates the start of a file
         const char *file_marker = NULL;
         for (size_t i = search_start; i < current + limit && i < content_length; i++) {
-            if (i + 6 < content_length && strncmp(content + i, "\n### 📄", 6) == 0) {
+            if (i + marker_len < content_length &&
+                strncmp(content + i, "\n### 📄", marker_len) == 0) {
                 file_marker = content + i;
                 break;
             }
