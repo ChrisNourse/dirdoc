@@ -493,14 +493,19 @@ size_t find_split_points(const char *content, size_t limit, size_t *split_points
 char* get_split_filename(const char *original_path, size_t part_number) {
     char *dot = strrchr(original_path, '.');
     size_t basename_length = dot ? (size_t)(dot - original_path) : strlen(original_path);
-    size_t new_length = basename_length + 10 + 1; // "_partXX" + extension + null terminator
+    size_t ext_length = dot ? strlen(dot) : 0;
+
+    char part_suffix[32];
+    snprintf(part_suffix, sizeof(part_suffix), "_part%zu", part_number);
+
+    size_t new_length = basename_length + strlen(part_suffix) + ext_length + 1;
     char *new_filename = malloc(new_length);
     if (!new_filename) return NULL;
 
     if (dot) {
-        snprintf(new_filename, new_length, "%.*s_part%zu%s", (int)basename_length, original_path, part_number, dot);
+        snprintf(new_filename, new_length, "%.*s%s%s", (int)basename_length, original_path, part_suffix, dot);
     } else {
-        snprintf(new_filename, new_length, "%s_part%zu", original_path, part_number);
+        snprintf(new_filename, new_length, "%s%s", original_path, part_suffix);
     }
 
     return new_filename;
