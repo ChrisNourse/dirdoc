@@ -11,6 +11,9 @@
 #include "gitignore.h"
 #include "stats.h"
 
+// Forward declaration from writer.c for direct unit testing
+size_t find_split_points(const char *content, size_t limit, size_t *split_points, size_t max_splits);
+
 /**
  * @brief Test that verifies smart splitting preserves documented files.
  */
@@ -99,9 +102,35 @@ void test_smart_split() {
     printf("✔ test_smart_split passed\n");
 }
 
+/**
+ * @brief Ensure splitting only triggers on the exact UTF-8 marker.
+ */
+void test_split_marker_length() {
+    // Build a long prefix so the false marker is inside the search window
+    char prefix[70];
+    memset(prefix, 'A', sizeof(prefix) - 1);
+    prefix[sizeof(prefix) - 1] = '\0';
+
+    char content[512];
+    snprintf(content, sizeof(content),
+             "%s\n### 📝 Wrong marker\nSome filler text to extend length\n\n### 📄 Correct marker\nEnd\n",
+             prefix);
+
+    size_t points[2];
+    size_t splits = find_split_points(content, 120, points, 2);
+
+    const char *expected = strstr(content, "\n### 📄");
+    assert(expected != NULL);
+    assert(splits == 1);
+    assert(points[0] == (size_t)(expected - content + 1));
+
+    printf("✔ test_split_marker_length passed\n");
+}
+
 // Run function for the split tests
 void run_split_tests() {
     printf("Running split tests...\n");
+    test_split_marker_length();
     test_smart_split();
     printf("All split tests passed!\n");
 }
