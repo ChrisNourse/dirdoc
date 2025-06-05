@@ -11,6 +11,9 @@
 #include "gitignore.h"
 #include "stats.h"
 
+// Forward declaration from writer.c
+char* get_split_filename(const char *original_path, size_t part_number);
+
 /**
  * @brief Test that verifies smart splitting preserves documented files.
  */
@@ -86,10 +89,32 @@ void test_smart_split() {
     printf("✔ test_smart_split passed\n");
 }
 
+/* Test the get_split_filename helper */
+void test_get_split_filename() {
+    char *name = get_split_filename("output.md", 3);
+    assert(strcmp(name, "output_part3.md") == 0);
+    free(name);
+
+    const char *long_ext = "verylongextensionthatexceeds32chars";
+    char long_path[128];
+    snprintf(long_path, sizeof(long_path), "file.%s", long_ext);
+    name = get_split_filename(long_path, 1);
+
+    size_t expected_len = strlen("file_part1.") + strlen(long_ext) + 1;
+    char *expected = malloc(expected_len);
+    snprintf(expected, expected_len, "file_part1.%s", long_ext);
+    assert(strcmp(name, expected) == 0);
+    free(name);
+    free(expected);
+
+    printf("✔ test_get_split_filename passed\n");
+}
+
 // Run function for the split tests
 void run_split_tests() {
     printf("Running split tests...\n");
     test_smart_split();
+    test_get_split_filename();
     printf("All split tests passed!\n");
 }
 
