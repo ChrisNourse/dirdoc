@@ -189,12 +189,12 @@ dirdoc is ideal for:
 
 ## Alternatives 
 I found out about both of these after I made the first version of dirdoc.
-The main difference between the alternatives is the dependecies and portablity. I want dirdoc to be as simple as possible to get up and running. No special enviroments or any other dependencies. Completely portable. 
+The main difference between the alternatives is the dependencies and portability. I want dirdoc to be as simple as possible to get up and running. No special environments or any other dependencies. Completely portable. 
 
 - https://github.com/yamadashy/repomix
-  - Awsome tool. Gas a ton of neet features includig a webpage! 
+  - Awesome tool. Has a ton of neat features including a webpage! 
 - https://github.com/cyclotruc/gitingest
-  - Beautiful implmentation. Also awsome website. 
+  - Beautiful implementation. Also awesome website. 
 
 ## Contributing
 
