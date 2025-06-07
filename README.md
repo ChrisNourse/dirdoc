@@ -83,28 +83,6 @@ int main(int argc, char *argv[]) {
 ``````
 
 
-## Universal Binary
-
-Pre-built binaries for dirdoc are available in the [GitHub Releases](https://github.com/ChrisNourse/dirdoc/releases) section. Download the binary.
-
-- **macOS, Linux, BSD:**  
-  Ensure the binary is executable. If needed, run:
-  ```bash
-  chmod +x dirdoc
-  ```
-
-- **Windows:**  
- Obtain the binary from GitHub Releases, you may need to rename it by appending `.exe` (e.g., `dirdoc` → `dirdoc.exe`) for proper execution.
-
-Once prepared, you can run the binary directly:
-```bash
-dirdoc --help
-```
-
-- **Windows:**  
-```powershell
-dirdoc.exe --help
-```
 
 ## Installation (Using the Pre-built Binary)
 
@@ -118,9 +96,11 @@ To conveniently run `dirdoc` from any folder on your system, choose one of the f
 
 #### On Linux and macOS
 
-- **Option 1:** Copy the binary to a directory in your PATH (e.g., `/usr/local/bin`):
+- **Option 1:** Copy the compiled binary to a directory in your PATH (e.g., `/usr/local/bin`).
+  Ensure you have either run `make` (which places the binary in `build/dirdoc`) or downloaded the
+  release file and are currently in the folder that contains the `dirdoc` executable:
   ```bash
-  sudo cp dirdoc /usr/local/bin/dirdoc
+  sudo cp build/dirdoc /usr/local/bin/dirdoc  # adjust the path if your binary is elsewhere
   ```
   Or, if you've cloned the repository, simply run:
   ```bash
@@ -144,6 +124,28 @@ To conveniently run `dirdoc` from any folder on your system, choose one of the f
   3. Edit the **Path** variable and add the folder containing `dirdoc.exe`.
   4. Click **OK** to apply.
 
+## Universal Binary
+
+Pre-built binaries for dirdoc are available in the [GitHub Releases](https://github.com/ChrisNourse/dirdoc/releases) section. Download the binary.
+
+- **macOS, Linux, BSD:**  
+  Ensure the binary is executable. If needed, run:
+  ```bash
+  chmod +x dirdoc
+  ```
+
+- **Windows:**  
+ Obtain the binary from GitHub Releases, you may need to rename it by appending `.exe` (e.g., `dirdoc` → `dirdoc.exe`) for proper execution.
+
+Once prepared, you can run the binary directly:
+```bash
+dirdoc --help
+```
+
+- **Windows:**  
+```powershell
+dirdoc.exe --help
+```
 ## Usage
 
 After installation, run the application to display the help message:
