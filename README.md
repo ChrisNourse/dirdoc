@@ -24,6 +24,7 @@ This packaged document includes a comprehensive directory structure, file conten
 - **.gitignore Integration:** Honors .gitignore files, letting you exclude specific files or directories.
 - **Output Splitting:** Can split the output into multiple files if the generated document exceeds a specified size.
 - **Flexible Modes:** Optionally generate structure-only documentation or include file contents.
+- **Codebase Reconstruction:** Rebuild a directory and its files from a dirdoc-generated Markdown document. Binary files are recreated as empty placeholders.
 
 
 ## Example Output
@@ -177,6 +178,11 @@ dirdoc --help
 - **Include .git folders in the documentation:**
   ```bash
   dirdoc --include-git /path/to/dir
+  ```
+
+- **Reconstruct a codebase from documentation:** Binary files will be restored as empty files.
+  ```bash
+  dirdoc --reconstruct -o ./restored project_documentation.md
   ```
 
 ## Use Cases

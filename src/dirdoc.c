@@ -7,6 +7,7 @@
 #include <string.h>
 #include "dirdoc.h"
 #include "writer.h"  // Include writer.h to set split options
+#include "reconstruct.h"
 
 #if !defined(UNIT_TEST)
 /**
@@ -22,7 +23,8 @@ static void print_help() {
            "  -sp,  --split              Enable split output. Optionally, use -l/--limit to specify maximum file size in MB (default: 18).\n"
            "  -l,   --limit <limit>      Set maximum file size in MB for each split file (used with -sp).\n"
            "  -ig,  --include-git        Include .git folders in documentation (default: ignored).\n"
-           "  --ignore <pattern>         Ignore files matching the specified pattern (supports wildcards). Can be specified multiple times.\n\n"
+           "  --ignore <pattern>         Ignore files matching the specified pattern (supports wildcards). Can be specified multiple times.\n"
+           "  -rc,  --reconstruct        Reconstruct a directory from a dirdoc markdown. Use -o to specify the output directory.\n\n"
            "Examples:\n"
            "  dirdoc /path/to/dir\n"
            "  dirdoc -o custom.md /path/to/dir\n"
@@ -51,6 +53,7 @@ int main(int argc, char *argv[]) {
     const char *output_file = NULL;
     int flags = 0;
     double split_limit_mb = 18.0; // Default split limit in MB
+    int reconstruct_mode = 0;
 
     #define MAX_IGNORE_PATTERNS 64
     char *ignore_patterns[MAX_IGNORE_PATTERNS];
@@ -72,6 +75,8 @@ int main(int argc, char *argv[]) {
                 fprintf(stderr, "Error: --output requires a filename argument.\n");
                 return 1;
             }
+        } else if ((strcmp(argv[i], "--reconstruct") == 0) || (strcmp(argv[i], "-rc") == 0)) {
+            reconstruct_mode = 1;
         } else if ((strcmp(argv[i], "--no-gitignore") == 0) || (strcmp(argv[i], "-ngi") == 0)) {
             flags |= IGNORE_GITIGNORE;
         } else if ((strcmp(argv[i], "-s") == 0) || (strcmp(argv[i], "--structure-only") == 0)) {
@@ -123,9 +128,14 @@ int main(int argc, char *argv[]) {
     }
 
     if (!input_dir) {
-        fprintf(stderr, "Error: No directory specified.\n");
+        fprintf(stderr, "Error: No input path specified.\n");
         print_help();
         return 1;
+    }
+
+    if (reconstruct_mode) {
+        const char *out_dir = output_file ? output_file : ".";
+        return reconstruct_from_markdown(input_dir, out_dir);
     }
 
     // Set split options in writer module if SPLIT_OUTPUT flag is enabled.
@@ -138,10 +148,8 @@ int main(int argc, char *argv[]) {
         set_extra_ignore_patterns(ignore_patterns, ignore_patterns_count);
     }
 
-    // Call document_directory from the writer module.
     int result = document_directory(input_dir, output_file, flags);
 
-    // Now free the patterns after document_directory is done with them
     free_extra_ignore_patterns();
 
     return result;
