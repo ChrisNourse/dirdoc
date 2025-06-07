@@ -116,7 +116,7 @@ Visit the [GitHub Releases](https://github.com/ChrisNourse/dirdoc/releases) page
 
 To conveniently run `dirdoc` from any folder on your system, choose one of the following methods:
 
--#### On Linux and macOS
+#### On Linux and macOS
 
 - **Option 1:** Copy the compiled binary to a directory in your PATH (e.g., `/usr/local/bin`).
   Ensure you have either run `make` (which places the binary in `build/dirdoc`) or downloaded the
