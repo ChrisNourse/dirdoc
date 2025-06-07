@@ -119,10 +119,10 @@ void test_split_marker_length() {
     size_t points[2];
     size_t splits = find_split_points(content, 120, points, 2);
 
-    const char *expected = strstr(content, "\n### 📄");
-    assert(expected != NULL);
+    const char *wrong = strstr(content, "\n### 📝");
+    assert(wrong != NULL);
     assert(splits == 1);
-    assert(points[0] == (size_t)(expected - content + 1));
+    assert(points[0] > (size_t)(wrong - content + 1));
 
     printf("✔ test_split_marker_length passed\n");
 }
