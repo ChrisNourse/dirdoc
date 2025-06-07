@@ -8,6 +8,11 @@ DEPS_DIR  = deps
 BUILD_DIR = build
 TEST_DIR  = tests
 
+# Installation directories
+PREFIX ?= /usr/local
+BINDIR ?= $(PREFIX)/bin
+DESTDIR ?=
+
 # Compiler and Flags
 CC = $(DEPS_DIR)/cosmocc/bin/cosmocc
 CXX = $(DEPS_DIR)/cosmocc/bin/cosmoc++
@@ -74,7 +79,7 @@ TEST_TIKTOKEN_OBJ = $(patsubst %.c, $(BUILD_DIR)/test_%.o, $(TEST_TIKTOKEN_SRCS)
 TIKTOKEN_TEST_DEPS = $(BUILD_DIR)/tiktoken.o $(BUILD_DIR)/stats.o $(BUILD_DIR)/tiktoken_cpp.o
 
 
-.PHONY: all clean super_clean deps test help
+.PHONY: all clean super_clean deps test install help
 
 # Main build target depends on the final binary
 all: $(BUILD_DIR)/dirdoc
@@ -238,6 +243,13 @@ test_file_deletion: deps $(BUILD_DIR)/test_file_deletion
 	@echo "🚀 Running file deletion tests..."
 	./$(BUILD_DIR)/test_file_deletion
 
+# Install the dirdoc binary
+install: $(BUILD_DIR)/dirdoc
+	@echo "⏳ Installing dirdoc to $(DESTDIR)$(BINDIR)..."
+	install -d $(DESTDIR)$(BINDIR)
+	install -m 755 $(BUILD_DIR)/dirdoc $(DESTDIR)$(BINDIR)/dirdoc
+	@echo "✅ dirdoc installed to $(DESTDIR)$(BINDIR)/dirdoc"
+
 clean:
 	@echo "⏳ Cleaning build artifacts..."
 	rm -rf $(BUILD_DIR)
@@ -255,4 +267,5 @@ help:
 	@echo "  test            - Build and run the test suite"
 	@echo "  clean           - Remove build artifacts (tools and generated files in build dir)"
 	@echo "  super_clean     - Remove build artifacts and dependencies (complete cleanup)"
+	@echo "  install         - Install dirdoc to $(PREFIX)/bin"
 	@echo "  help            - Show this help message"

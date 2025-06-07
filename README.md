@@ -122,6 +122,10 @@ To conveniently run `dirdoc` from any folder on your system, choose one of the f
   ```bash
   sudo cp dirdoc /usr/local/bin/dirdoc
   ```
+  Or, if you've cloned the repository, simply run:
+  ```bash
+  make install
+  ```
 - **Option 2:** Add the folder containing `dirdoc` to your PATH. For example, if you place it in `~/dirdoc`, add the following to your `~/.bashrc` or `~/.bash_profile`:
   ```bash
   export PATH="$PATH:$HOME/dirdoc"
