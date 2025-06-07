@@ -83,28 +83,6 @@ int main(int argc, char *argv[]) {
 ``````
 
 
-## Universal Binary
-
-Pre-built binaries for dirdoc are available in the [GitHub Releases](https://github.com/ChrisNourse/dirdoc/releases) section. Download the binary.
-
-- **macOS, Linux, BSD:**  
-  Ensure the binary is executable. If needed, run:
-  ```bash
-  chmod +x dirdoc
-  ```
-
-- **Windows:**  
- Obtain the binary from GitHub Releases, you may need to rename it by appending `.exe` (e.g., `dirdoc` → `dirdoc.exe`) for proper execution.
-
-Once prepared, you can run the binary directly:
-```bash
-dirdoc --help
-```
-
-- **Windows:**  
-```powershell
-dirdoc.exe --help
-```
 
 ## Installation (Using the Pre-built Binary)
 
@@ -142,6 +120,28 @@ To conveniently run `dirdoc` from any folder on your system, choose one of the f
   3. Edit the **Path** variable and add the folder containing `dirdoc.exe`.
   4. Click **OK** to apply.
 
+## Universal Binary
+
+Pre-built binaries for dirdoc are available in the [GitHub Releases](https://github.com/ChrisNourse/dirdoc/releases) section. Download the binary.
+
+- **macOS, Linux, BSD:**  
+  Ensure the binary is executable. If needed, run:
+  ```bash
+  chmod +x dirdoc
+  ```
+
+- **Windows:**  
+ Obtain the binary from GitHub Releases, you may need to rename it by appending `.exe` (e.g., `dirdoc` → `dirdoc.exe`) for proper execution.
+
+Once prepared, you can run the binary directly:
+```bash
+dirdoc --help
+```
+
+- **Windows:**  
+```powershell
+dirdoc.exe --help
+```
 ## Usage
 
 After installation, run the application to display the help message:
