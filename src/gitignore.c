@@ -8,7 +8,15 @@
 
 #define MAX_LINE_LENGTH 1024
 
-// Helper: Escapes regex special characters in a string.
+/**
+ * @brief Escapes regex special characters in a string.
+ *
+ * Allocates and returns a new string where characters that have special meaning
+ * in regular expressions are prefixed with a backslash.
+ *
+ * @param str Input string to escape.
+ * @return char* Newly allocated escaped string or NULL on failure.
+ */
 static char *escape_regex(const char *str) {
     size_t len = strlen(str);
     char *escaped = (char*)malloc(2 * len + 1); // worst-case: every character escaped
@@ -24,12 +32,16 @@ static char *escape_regex(const char *str) {
     return escaped;
 }
 
-// Helper: Translates a gitignore pattern into a POSIX regular expression.
-// This simplified translator replaces:
-//   - "**" with ".*" (matching across directories)
-//   - "*"  with "[^/]*" (matching within a single directory)
-//   - "?"  with "." (any single character)
-// Change the function signature to accept dir_only flag
+/**
+ * @brief Convert a gitignore pattern to a POSIX regular expression.
+ *
+ * This simplified translator handles `**`, `*` and `?` wildcards and optionally
+ * appends a directory-only suffix when `dir_only` is true.
+ *
+ * @param pattern The gitignore pattern string.
+ * @param dir_only Non-zero if the pattern applies only to directories.
+ * @return char* Newly allocated regex string or NULL on failure.
+ */
 static char *translate_gitignore_pattern(const char *pattern, bool dir_only) {
     size_t len = strlen(pattern);
     // Allocate a buffer that is large enough for worst-case expansion.
@@ -87,9 +99,14 @@ static char *translate_gitignore_pattern(const char *pattern, bool dir_only) {
     return regex_pattern;
 }
 
-// Update the parse_gitignore_line function to pass dir_only to translate_gitignore_pattern
-/* Parses a single gitignore pattern string and adds it to the provided GitignoreList.
- * Returns 0 on success, -1 on error.
+/**
+ * @brief Parse a single gitignore pattern string and add it to a list.
+ *
+ * This wrapper is shared by the line-based parser and the command line handler.
+ *
+ * @param pattern_str The gitignore pattern text.
+ * @param list Gitignore list to append the compiled rule to.
+ * @return int 0 on success, -1 on error.
  */
 int parse_gitignore_pattern_string(const char *pattern_str, GitignoreList *list) {
     if (!pattern_str || !list) return -1;
@@ -160,6 +177,13 @@ int parse_gitignore_pattern_string(const char *pattern_str, GitignoreList *list)
     return 0;
 }
 
+/**
+ * @brief Parse a single line from a .gitignore file.
+ *
+ * @param line The raw line text.
+ * @param list Gitignore list to update.
+ * @return int 0 on success, -1 on error.
+ */
 static int parse_gitignore_line(const char *line, GitignoreList *list) {
     // Skip leading whitespace.
     while (*line && isspace((unsigned char)*line)) line++;
@@ -180,6 +204,12 @@ static int parse_gitignore_line(const char *line, GitignoreList *list) {
     return result;
 }
 
+/**
+ * @brief Load rules from a .gitignore file located in a directory.
+ *
+ * @param dir_path Directory that may contain a .gitignore file.
+ * @param gitignore Gitignore list to populate.
+ */
 void load_gitignore(const char *dir_path, GitignoreList *gitignore) {
     gitignore->rules = NULL;
     gitignore->count = 0;
@@ -203,6 +233,13 @@ void load_gitignore(const char *dir_path, GitignoreList *gitignore) {
     fclose(f);
 }
 
+/**
+ * @brief Determine if a path should be ignored by gitignore rules.
+ *
+ * @param path Relative path to test.
+ * @param gitignore Compiled gitignore rule list.
+ * @return true if the path is ignored, false otherwise.
+ */
 bool match_gitignore(const char *path, const GitignoreList *gitignore) {
     if (!gitignore || gitignore->count == 0) return false;
     
@@ -218,6 +255,9 @@ bool match_gitignore(const char *path, const GitignoreList *gitignore) {
     return ignored;
 }
 
+/**
+ * @brief Free memory associated with a GitignoreList.
+ */
 void free_gitignore(GitignoreList *gitignore) {
     if (!gitignore) return;
     for (size_t i = 0; i < gitignore->count; i++) {

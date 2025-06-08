@@ -28,13 +28,26 @@ typedef struct {
     size_t total_tokens;
 } DocumentInfo;
 
-/* Main documentation generation function.
- * Returns 0 on success, non-zero on failure.
+/**
+ * @brief Main documentation generation function.
+ *
+ * Scans a directory and writes a markdown description of its structure and
+ * optionally its file contents.
+ *
+ * @param input_dir The directory to document.
+ * @param output_file Output markdown path or NULL for default.
+ * @param flags Combination of option flags (e.g., STRUCTURE_ONLY).
+ * @return int 0 on success, non-zero on failure.
  */
 int document_directory(const char *input_dir, const char *output_file, int flags);
 
-/* Returns a default output filename based on the input directory.
- * The returned string is dynamically allocated and must be freed by the caller.
+/**
+ * @brief Builds a default output filename based on the input directory.
+ *
+ * The returned string must be freed by the caller.
+ *
+ * @param input_dir Directory being documented.
+ * @return char* Newly allocated output filename.
  */
 char *get_default_output(const char *input_dir);
 

@@ -1,0 +1,16 @@
+name: Docstring Check
+on:
+  pull_request:
+  push:
+    branches: [ main ]
+
+jobs:
+  doccheck:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Build doc_check tool
+        run: gcc -std=c99 -Wall -Wextra -o tools/doc_check tools/doc_check.c
+      - name: Run docstring check
+        run: tools/doc_check src/*.c src/*.h src/*.cpp

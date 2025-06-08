@@ -21,22 +21,34 @@ typedef struct {
     size_t capacity;
 } GitignoreList;
 
-/* Loads the .gitignore file from the specified directory,
- * parses each rule (supporting ** patterns, negation, etc.), and compiles a regex for each.
+/**
+ * @brief Load gitignore rules from a directory.
+ *
+ * @param dir_path Directory containing a .gitignore file.
+ * @param gitignore Gitignore list to populate.
  */
 void load_gitignore(const char *dir_path, GitignoreList *gitignore);
 
-/* Parses a single gitignore pattern string and adds it to the provided GitignoreList.
- * Returns 0 on success, -1 on error.
+/**
+ * @brief Add a gitignore pattern string to a list.
+ *
+ * @param pattern Pattern text.
+ * @param list Gitignore list to modify.
+ * @return int 0 on success, -1 on error.
  */
 int parse_gitignore_pattern_string(const char *pattern, GitignoreList *list);
 
-/* Checks whether the given path should be ignored based on the compiled gitignore rules.
- * Returns true if the path should be ignored.
+/**
+ * @brief Check if a path matches gitignore rules.
+ *
+ * @param path Relative path to test.
+ * @param gitignore Compiled gitignore list.
+ * @return true if the path should be ignored.
  */
 bool match_gitignore(const char *path, const GitignoreList *gitignore);
 
-/* Frees all memory allocated for the GitignoreList and releases compiled regex resources.
+/**
+ * @brief Free resources associated with a GitignoreList.
  */
 void free_gitignore(GitignoreList *gitignore);
 

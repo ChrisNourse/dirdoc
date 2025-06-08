@@ -653,6 +653,9 @@ int document_directory(const char *input_dir, const char *output_file, int flags
     return 0;
 }
 
+/**
+ * @brief Frees memory allocated for extra ignore patterns.
+ */
 void free_extra_ignore_patterns() {
     if (g_extra_ignore_patterns) {
         for (int i = 0; i < g_extra_ignore_count; i++) {

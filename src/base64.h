@@ -5,7 +5,12 @@
 #include <vector>
 #include <stdexcept>
 
-// Base64 decoding function
+/**
+ * @brief Decode a base64-encoded string.
+ *
+ * @param base64_str Input base64 string.
+ * @return Decoded binary data as a string.
+ */
 inline std::string base64_decode(const std::string& base64_str) {
     const char* base64_chars = 
         "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -61,7 +66,12 @@ inline std::string base64_decode(const std::string& base64_str) {
 }
 
 
-// Base64 encoding function
+/**
+ * @brief Encode binary data as base64.
+ *
+ * @param input Raw input string.
+ * @return Base64 encoded representation.
+ */
 inline std::string base64_encode(const std::string& input) {
     const char* base64_chars =
         "ABCDEFGHIJKLMNOPQRSTUVWXYZ"

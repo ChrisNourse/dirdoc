@@ -7,6 +7,12 @@
 #include "reconstruct.h"
 #include "dirdoc.h" // for MAX_PATH_LEN and BUFFER_SIZE
 
+/**
+ * @brief Recursively create directories for a given path.
+ *
+ * @param path Directory path to create.
+ * @return int 0 on success, non-zero on failure.
+ */
 static int mkdirs(const char *path) {
     char tmp[MAX_PATH_LEN];
     snprintf(tmp, sizeof(tmp), "%s", path);
@@ -25,6 +31,13 @@ static int mkdirs(const char *path) {
     return mkdir(tmp, 0755); // final component
 }
 
+/**
+ * @brief Check if a line begins a fenced code block.
+ *
+ * @param line Input line from the markdown file.
+ * @param len Output parameter storing the fence length.
+ * @return int Non-zero if the line begins a fence.
+ */
 static int is_fence_start(const char *line, int *len) {
     int i = 0;
     while (line[i] == '`') i++;
@@ -35,6 +48,13 @@ static int is_fence_start(const char *line, int *len) {
     return 0;
 }
 
+/**
+ * @brief Check if a line ends a fenced code block of a given length.
+ *
+ * @param line Input line from the markdown file.
+ * @param len Number of backticks that opened the fence.
+ * @return int Non-zero if this line closes the fence.
+ */
 static int is_fence_end(const char *line, int len) {
     for (int i = 0; i < len; i++) {
         if (line[i] != '`') return 0;
@@ -43,6 +63,13 @@ static int is_fence_end(const char *line, int len) {
     return c == '\n' || c == '\0' || c == '\r';
 }
 
+/**
+ * @brief Reconstruct files from a dirdoc-generated markdown document.
+ *
+ * @param md_path Path to the documentation markdown.
+ * @param out_dir Output directory for reconstructed files.
+ * @return int 0 on success, non-zero on failure.
+ */
 int reconstruct_from_markdown(const char *md_path, const char *out_dir) {
     FILE *in = fopen(md_path, "r");
     if (!in) {
