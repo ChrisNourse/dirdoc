@@ -246,9 +246,14 @@ test_file_deletion: deps $(BUILD_DIR)/test_file_deletion
 # Install the dirdoc binary
 install: $(BUILD_DIR)/dirdoc
 	@echo "⏳ Installing dirdoc to $(DESTDIR)$(BINDIR)..."
-	       mkdir -p $(DESTDIR)$(BINDIR)
-	       install -m 755 $(BUILD_DIR)/dirdoc $(DESTDIR)$(BINDIR)/dirdoc
-		@echo "✅ dirdoc installed to $(DESTDIR)$(BINDIR)/dirdoc"
+	@mkdir -p $(DESTDIR)$(BINDIR)
+	@if [ ! -w "$(DESTDIR)$(BINDIR)" ]; then \
+	echo "❌ No write permission to $(DESTDIR)$(BINDIR)"; \
+	echo "   Use 'sudo make install' or set PREFIX to a writable directory"; \
+	exit 1; \
+	fi
+	install -m 755 $(BUILD_DIR)/dirdoc $(DESTDIR)$(BINDIR)/dirdoc
+	@echo "✅ dirdoc installed to $(DESTDIR)$(BINDIR)/dirdoc"
 
 clean:
 	@echo "⏳ Cleaning build artifacts..."

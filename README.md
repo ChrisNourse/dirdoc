@@ -106,6 +106,8 @@ To conveniently run `dirdoc` from any folder on your system, choose one of the f
   ```bash
   sudo cp build/dirdoc /usr/local/bin/dirdoc  # adjust the path if your binary is elsewhere
   ```
+  If you encounter a "Permission denied" error, rerun with `sudo` or choose a
+  PREFIX you can write to.
   Or, if you've cloned the repository, simply run:
   ```bash
   make install
