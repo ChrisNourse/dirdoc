@@ -97,8 +97,12 @@ To conveniently run `dirdoc` from any folder on your system, choose one of the f
 #### On Linux and macOS
 
 - **Option 1:** Copy the compiled binary to a directory in your PATH (e.g., `/usr/local/bin`).
-  Ensure you have either run `make` (which places the binary in `build/dirdoc`) or downloaded the
-  release file and are currently in the folder that contains the `dirdoc` executable:
+  Or, if you've cloned the repository, simply run (you may need `sudo`):
+  sudo make install
+  ```
+  To install without root privileges, specify a writable PREFIX, e.g.:
+  ```bash
+  make install PREFIX="$HOME/.local"
   ```bash
   sudo cp build/dirdoc /usr/local/bin/dirdoc  # adjust the path if your binary is elsewhere
   ```

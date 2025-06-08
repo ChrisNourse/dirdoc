@@ -191,46 +191,46 @@ $(DEPS_DIR)/$(COSMO_ZIP): ensure_dirs
 	fi
 
 # Compile each source file into an object file.
-$(BUILD_DIR)/%.o: $(SRC_DIR)/%.c deps
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.c | deps
 	$(CC) $(CFLAGS) -c $< -o $@
 
 # Compile main C++ files, ensuring tiktoken_cpp.o depends on the generated header
-$(BUILD_DIR)/tiktoken_cpp.o: $(SRC_DIR)/tiktoken_cpp.cpp $(TIKTOKEN_GENERATED_HEADER) deps
+$(BUILD_DIR)/tiktoken_cpp.o: $(SRC_DIR)/tiktoken_cpp.cpp $(TIKTOKEN_GENERATED_HEADER) | deps
 	$(CXX) $(CXXFLAGS) -c $(SRC_DIR)/tiktoken_cpp.cpp -o $@
 
 # Compile test source files into object files
-$(BUILD_DIR)/test_%.o: $(TEST_DIR)/%.c deps
+$(BUILD_DIR)/test_%.o: $(TEST_DIR)/%.c | deps
 	$(CC) $(CFLAGS) $(TEST_CFLAGS) -c $< -o $@
 
 # Compile file deletion test separately
-$(BUILD_DIR)/test_test_file_deletion.o: $(TEST_DIR)/test_file_deletion.c deps
+$(BUILD_DIR)/test_test_file_deletion.o: $(TEST_DIR)/test_file_deletion.c | deps
 	$(CC) $(CFLAGS) $(TEST_CFLAGS) -c $< -o $@
 
 # Compile file deletion test for standalone use
-$(BUILD_DIR)/test_test_file_deletion_standalone.o: $(TEST_DIR)/test_file_deletion.c deps
+$(BUILD_DIR)/test_test_file_deletion_standalone.o: $(TEST_DIR)/test_file_deletion.c | deps
 	$(CC) $(CFLAGS) $(TEST_CFLAGS) -DFILE_DELETION_STANDALONE -c $< -o $@
 
 # Link all object files together for the main executable, ensuring dirdoc.o is last.
 # Make sure the generated header exists before linking.
-$(BUILD_DIR)/dirdoc: $(DIRDOC_LINK_OBJS) $(DIRDOC_OBJ) deps
+$(BUILD_DIR)/dirdoc: $(DIRDOC_LINK_OBJS) $(DIRDOC_OBJ) | deps
 	@echo "⏳ Linking dirdoc..."
 	$(CXX) $(LDFLAGS) -o $@ $(DIRDOC_LINK_OBJS) $(DIRDOC_OBJ)
-	@echo "✅ Build complete"
+	       @echo "✅ Build complete"
 
 # Test-specific version of dirdoc.o that gets compiled with the UNIT_TEST define
-$(BUILD_DIR)/dirdoc_test.o: $(SRC_DIR)/dirdoc.c deps
+$(BUILD_DIR)/dirdoc_test.o: $(SRC_DIR)/dirdoc.c | deps
 	$(CC) $(CFLAGS) $(TEST_CFLAGS) -c $< -o $@
 
 # Link test objects and application objects for the main test executable - using test-specific dirdoc_test.o
-$(BUILD_DIR)/dirdoc_test: $(filter-out $(BUILD_DIR)/dirdoc.o, $(OBJECTS)) $(BUILD_DIR)/dirdoc_test.o $(MAIN_CPP_OBJECTS) $(TEST_OBJECTS) $(TIKTOKEN_GENERATED_HEADER) | deps
-	@echo "⏳ Linking test executable..."
-	$(CXX) $(LDFLAGS) -o $@ $(filter-out $(TIKTOKEN_GENERATED_HEADER), $(filter-out deps, $^))
+	$(BUILD_DIR)/dirdoc_test: $(filter-out $(BUILD_DIR)/dirdoc.o, $(OBJECTS)) $(BUILD_DIR)/dirdoc_test.o $(MAIN_CPP_OBJECTS) $(TEST_OBJECTS) $(TIKTOKEN_GENERATED_HEADER) | deps
+		@echo "⏳ Linking test executable..."
+		$(CXX) $(LDFLAGS) -o $@ $(filter-out $(TIKTOKEN_GENERATED_HEADER), $(filter-out deps, $^))
 	@echo "✅ Test link complete"
 
 # Build file deletion test executable
-$(BUILD_DIR)/test_file_deletion: $(BUILD_DIR)/test_test_file_deletion_standalone.o $(filter-out $(BUILD_DIR)/dirdoc.o, $(OBJECTS)) $(BUILD_DIR)/dirdoc_test.o $(MAIN_CPP_OBJECTS)
+$(BUILD_DIR)/test_file_deletion: $(BUILD_DIR)/test_test_file_deletion_standalone.o $(filter-out $(BUILD_DIR)/dirdoc.o, $(OBJECTS)) $(BUILD_DIR)/dirdoc_test.o $(MAIN_CPP_OBJECTS) | deps
 	@echo "⏳ Linking file deletion test executable..."
-	$(CXX) $(LDFLAGS) -o $@ $(filter-out $(TIKTOKEN_GENERATED_HEADER), $(filter-out deps, $^))
+		$(CXX) $(LDFLAGS) -o $@ $(filter-out $(TIKTOKEN_GENERATED_HEADER), $(filter-out deps, $^))
 	@echo "✅ File deletion test link complete"
 
 # Build and run the main tests - don't force 'all' to run, but ensure dependencies are available
@@ -246,9 +246,9 @@ test_file_deletion: deps $(BUILD_DIR)/test_file_deletion
 # Install the dirdoc binary
 install: $(BUILD_DIR)/dirdoc
 	@echo "⏳ Installing dirdoc to $(DESTDIR)$(BINDIR)..."
-	install -d $(DESTDIR)$(BINDIR)
-	install -m 755 $(BUILD_DIR)/dirdoc $(DESTDIR)$(BINDIR)/dirdoc
-	@echo "✅ dirdoc installed to $(DESTDIR)$(BINDIR)/dirdoc"
+	       mkdir -p $(DESTDIR)$(BINDIR)
+	       install -m 755 $(BUILD_DIR)/dirdoc $(DESTDIR)$(BINDIR)/dirdoc
+		@echo "✅ dirdoc installed to $(DESTDIR)$(BINDIR)/dirdoc"
 
 clean:
 	@echo "⏳ Cleaning build artifacts..."
