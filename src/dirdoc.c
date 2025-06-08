@@ -156,10 +156,14 @@ int main(int argc, char *argv[]) {
 }
 #endif  /* !defined(UNIT_TEST) */
 
-/* 
- * Implementation of get_default_output()
- * Returns a default output filename based on the input directory.
- * The returned string is dynamically allocated and must be freed by the caller.
+/**
+ * @brief Returns a default output filename based on the input directory.
+ *
+ * Generates a markdown filename based on the provided directory name. The
+ * returned string is dynamically allocated and must be freed by the caller.
+ *
+ * @param input_dir The path of the directory being documented.
+ * @return char* Newly allocated output filename.
  */
 char *get_default_output(const char *input_dir) {
     const char *default_name = "directory_documentation.md";

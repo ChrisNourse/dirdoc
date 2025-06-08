@@ -7,52 +7,61 @@
 #include "stats.h"
 #include "gitignore.h"
 
-/* Writes the tree structure representation to the given file stream.
- * @param out: Output file stream.
- * @param list: Pointer to the FileList containing scanned entries.
- * @param info: Pointer to DocumentInfo for accumulating token and size statistics.
+/**
+ * @brief Write the directory tree structure to a file stream.
+ *
+ * @param out Output file stream.
+ * @param list List of scanned file entries.
+ * @param info Document statistics accumulator.
  */
 void write_tree_structure(FILE *out, FileList *list, DocumentInfo *info);
 
-/* Writes the content of a file with fenced code blocks to the output stream.
- * @param out: Output file stream.
- * @param path: Path of the file to write.
- * @param info: Pointer to DocumentInfo for accumulating token and size statistics.
+/**
+ * @brief Write a file's contents to the output stream using fenced code blocks.
+ *
+ * @param out Output file stream.
+ * @param path Path of the file to write.
+ * @param info Document statistics accumulator.
  */
 void write_file_content(FILE *out, const char *path, DocumentInfo *info);
 
-/* Finalizes the output file by prepending token statistics.
- * If split output is enabled and the file exceeds the specified limit,
- * the output will be split into multiple files with increasing number suffixes.
- * @param out_path: Path of the output file.
- * @param info: Pointer to DocumentInfo containing the computed statistics.
- * @return: 0 on success, non-zero on failure.
+/**
+ * @brief Finalize the output file and optionally split it by size.
+ *
+ * @param out_path Path of the output file.
+ * @param info Document statistics.
+ * @return int 0 on success, non-zero on failure.
  */
 int finalize_output(const char *out_path, DocumentInfo *info);
 
-/* Sets the split output options.
- * @param enabled: Non-zero to enable splitting.
- * @param limit_mb: Maximum size in MB per output file.
+/**
+ * @brief Configure splitting of the output file.
+ *
+ * @param enabled Non-zero to enable splitting.
+ * @param limit_mb Maximum size per file in MB.
  */
 void set_split_options(int enabled, double limit_mb);
 
-/* Sets extra ignore patterns to be applied during directory scanning.
- * @param patterns: Array of pattern strings.
- * @param count: Number of patterns.
+/**
+ * @brief Set additional ignore patterns for directory scanning.
+ *
+ * @param patterns Array of pattern strings.
+ * @param count Number of patterns.
  */
 void set_extra_ignore_patterns(char **patterns, int count);
 
 /**
- * @brief Frees memory allocated for extra ignore patterns.
- *
- * This function releases all memory allocated for the global extra ignore patterns
- * that were set using set_extra_ignore_patterns(). It should be called when
- * these patterns are no longer needed to prevent memory leaks.
+ * @brief Free memory allocated for extra ignore patterns.
  */
- void free_extra_ignore_patterns();
+void free_extra_ignore_patterns();
 
-/* Main documentation generation function.
- * Returns 0 on success, non-zero on failure.
+/**
+ * @brief Generate documentation for a directory.
+ *
+ * @param input_dir Directory to document.
+ * @param output_file Output markdown path or NULL for default.
+ * @param flags Flags controlling the documentation process.
+ * @return int 0 on success, non-zero on failure.
  */
 int document_directory(const char *input_dir, const char *output_file, int flags);
 

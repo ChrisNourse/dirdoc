@@ -5,10 +5,12 @@
 extern "C" {
 #endif
 
-/* Reconstructs a directory from a dirdoc generated markdown file.
- * md_path: path to the documentation markdown
- * out_dir: directory to create reconstructed files
- * Returns 0 on success, non-zero on failure.
+/**
+ * @brief Reconstruct a directory from a dirdoc markdown file.
+ *
+ * @param md_path Path to the documentation markdown.
+ * @param out_dir Output directory to write reconstructed files.
+ * @return int 0 on success, non-zero on failure.
  */
 int reconstruct_from_markdown(const char *md_path, const char *out_dir);
 
