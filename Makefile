@@ -41,26 +41,26 @@ COSMO_ZIP_URL = https://github.com/jart/cosmopolitan/releases/download/4.0.2/cos
 COSMO_ZIP     = cosmocc-4.0.2.zip
 
 # Source files (exclude the old data header if it was a .c file, which it wasn't)
-SOURCES = $(wildcard $(SRC_DIR)/*.c)
+SOURCES!=find $(SRC_DIR) -maxdepth 1 -name '*.c' -print | sort
 # Object files: compile each source file into an object file in $(BUILD_DIR)
-OBJECTS = $(patsubst $(SRC_DIR)/%.c, $(BUILD_DIR)/%.o, $(SOURCES))
+OBJECTS=${SOURCES:${SRC_DIR}/%.c=${BUILD_DIR}/%.o}
 
 # Ensure dirdoc.o is linked last (it provides get_default_output)
 DIRDOC_OBJ = $(BUILD_DIR)/dirdoc.o
 # Main C++ sources
 MAIN_CPP_SOURCES = $(SRC_DIR)/tiktoken_cpp.cpp
-MAIN_CPP_OBJECTS = $(patsubst $(SRC_DIR)/%.cpp, $(BUILD_DIR)/%.o, $(MAIN_CPP_SOURCES))
+MAIN_CPP_OBJECTS=${MAIN_CPP_SOURCES:${SRC_DIR}/%.cpp=${BUILD_DIR}/%.o}
 # All C++ objects (main + tools)
 ALL_CPP_OBJECTS = $(MAIN_CPP_OBJECTS) $(TIKTOKEN_GEN_TOOL_OBJ)
 # Objects for the final dirdoc executable
-DIRDOC_LINK_OBJS = $(filter-out $(DIRDOC_OBJ), $(OBJECTS)) $(MAIN_CPP_OBJECTS)
+DIRDOC_LINK_OBJS=${OBJECTS:${DIRDOC_OBJ}=} $(MAIN_CPP_OBJECTS)
 
 # Test objects need to include dirdoc.o explicitly to resolve get_default_output()
 TEST_LINK_OBJS = $(OBJECTS) $(MAIN_CPP_OBJECTS) $(TEST_OBJECTS)
 
 # Test source files and object files
-TEST_SOURCES = $(wildcard $(TEST_DIR)/*.c)
-TEST_OBJECTS = $(patsubst $(TEST_DIR)/%.c, $(BUILD_DIR)/test_%.o, $(TEST_SOURCES))
+TEST_SOURCES!=find $(TEST_DIR) -maxdepth 1 -name '*.c' -print | sort
+TEST_OBJECTS=${TEST_SOURCES:${TEST_DIR}/%.c=${BUILD_DIR}/test_%.o}
 
 # File deletion test specific objects
 TEST_FILE_DELETION_OBJ = $(BUILD_DIR)/test_test_file_deletion.o
@@ -70,7 +70,7 @@ TEST_CFLAGS = -DUNIT_TEST -I. -I$(SRC_DIR) -I$(TEST_DIR) -Ideps/cosmocc/include
 
 # Specific objects needed for test_tiktoken
 TEST_TIKTOKEN_SRCS = test_tiktoken.c
-TEST_TIKTOKEN_OBJ = $(patsubst %.c, $(BUILD_DIR)/test_%.o, $(TEST_TIKTOKEN_SRCS))
+TEST_TIKTOKEN_OBJ=${TEST_TIKTOKEN_SRCS:%.c=${BUILD_DIR}/test_%.o}
 TIKTOKEN_TEST_DEPS = $(BUILD_DIR)/tiktoken.o $(BUILD_DIR)/stats.o $(BUILD_DIR)/tiktoken_cpp.o
 
 
@@ -155,13 +155,13 @@ $(TIKTOKEN_GENERATED_HEADER): $(TIKTOKEN_GEN_TOOL_EXE) $(TIKTOKEN_DOWNLOADED_FIL
 	fi
 
 # Rule to build the generator tool executable
-$(TIKTOKEN_GEN_TOOL_EXE): $(TIKTOKEN_GEN_TOOL_OBJ) | deps_cosmo
+$(TIKTOKEN_GEN_TOOL_EXE): $(TIKTOKEN_GEN_TOOL_OBJ) deps_cosmo
 	@echo "⏳ Linking generator tool $(TIKTOKEN_GEN_TOOL_EXE)..."
 	$(CXX) $(LDFLAGS) -o $@ $(TIKTOKEN_GEN_TOOL_OBJ)
 	@echo "✅ Generator tool linked."
 
 # Rule to compile the generator tool object file
-$(TIKTOKEN_GEN_TOOL_OBJ): $(TIKTOKEN_GEN_TOOL_SRC) | deps_cosmo
+$(TIKTOKEN_GEN_TOOL_OBJ): $(TIKTOKEN_GEN_TOOL_SRC) deps_cosmo
 	@echo "⏳ Compiling generator tool $<..."
 	$(CXX) $(CXXFLAGS) -I$(SRC_DIR) -c $< -o $@ # Include src for base64.h
 	@echo "✅ Generator tool compiled."
@@ -217,15 +217,15 @@ $(BUILD_DIR)/dirdoc_test.o: $(SRC_DIR)/dirdoc.c deps
 	$(CC) $(CFLAGS) $(TEST_CFLAGS) -c $< -o $@
 
 # Link test objects and application objects for the main test executable - using test-specific dirdoc_test.o
-$(BUILD_DIR)/dirdoc_test: $(filter-out $(BUILD_DIR)/dirdoc.o, $(OBJECTS)) $(BUILD_DIR)/dirdoc_test.o $(MAIN_CPP_OBJECTS) $(TEST_OBJECTS) $(TIKTOKEN_GENERATED_HEADER) | deps
+$(BUILD_DIR)/dirdoc_test: deps $(OBJECTS:$(DIRDOC_OBJ)=) $(BUILD_DIR)/dirdoc_test.o $(MAIN_CPP_OBJECTS) $(TEST_OBJECTS) $(TIKTOKEN_GENERATED_HEADER)
 	@echo "⏳ Linking test executable..."
-	$(CXX) $(LDFLAGS) -o $@ $(filter-out $(TIKTOKEN_GENERATED_HEADER), $(filter-out deps, $^))
+	$(CXX) $(LDFLAGS) -o $@ $(OBJECTS:$(DIRDOC_OBJ)=) $(BUILD_DIR)/dirdoc_test.o $(MAIN_CPP_OBJECTS) $(TEST_OBJECTS)
 	@echo "✅ Test link complete"
 
 # Build file deletion test executable
-$(BUILD_DIR)/test_file_deletion: $(BUILD_DIR)/test_test_file_deletion_standalone.o $(filter-out $(BUILD_DIR)/dirdoc.o, $(OBJECTS)) $(BUILD_DIR)/dirdoc_test.o $(MAIN_CPP_OBJECTS)
+$(BUILD_DIR)/test_file_deletion: $(BUILD_DIR)/test_test_file_deletion_standalone.o $(OBJECTS:$(DIRDOC_OBJ)=) $(BUILD_DIR)/dirdoc_test.o $(MAIN_CPP_OBJECTS)
 	@echo "⏳ Linking file deletion test executable..."
-	$(CXX) $(LDFLAGS) -o $@ $(filter-out $(TIKTOKEN_GENERATED_HEADER), $(filter-out deps, $^))
+	$(CXX) $(LDFLAGS) -o $@ $(BUILD_DIR)/test_test_file_deletion_standalone.o $(OBJECTS:$(DIRDOC_OBJ)=) $(BUILD_DIR)/dirdoc_test.o $(MAIN_CPP_OBJECTS)
 	@echo "✅ File deletion test link complete"
 
 # Build and run the main tests - don't force 'all' to run, but ensure dependencies are available
