@@ -9,7 +9,7 @@ BINDIR = bin
 
 # Source files and object files
 SRCS = $(SRCDIR)/main.c $(SRCDIR)/utils.c
-OBJS = $(patsubst $(SRCDIR)/%.c,$(OBJDIR)/%.o,$(SRCS))
+OBJS = ${SRCS:${SRCDIR}/%.c=${OBJDIR}/%.o}
 
 # Target executable
 TARGET = $(BINDIR)/sample_app
